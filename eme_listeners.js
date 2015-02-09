@@ -129,7 +129,7 @@ EmeListeners.prototype.addListenersToMediaKeys_ = function(mediaKeys) {
     return result;
   }.bind(this);
 
-  mediaKeys.load = EmeListeners.extendEmeMethod(
+  mediaKeys.setServerCertificate = EmeListeners.extendEmeMethod(
       mediaKeys,
       mediaKeys.setServerCertificate,
       'SetServerCertificateCall',
@@ -167,7 +167,7 @@ EmeListeners.prototype.addListenersToMediaKeySession_ = function(session) {
 
   session.addEventListener('message', EmeListeners.logEvent);
 
-  session.addEventListener('keyschange', EmeListeners.logEvent);
+  session.addEventListener('keystatuseschange', EmeListeners.logEvent);
 
   session.listenersAdded_ = true;
 };
