@@ -1,5 +1,5 @@
 describe('emeListeners', function() {
-  var listener, mockFn;
+  var listener, mockFn, async;
   var expectLogCall = function(name, args, labels, target) {
     expect(EmeListeners.logCall).toHaveBeenCalledWith(
         name, args, labels, jasmine.any(Object), target);
@@ -9,7 +9,6 @@ describe('emeListeners', function() {
     expect(EmeListeners.logEvent).toHaveBeenCalledWith(events[eventName]);
   };
 
-  
   const events = {
       webkitNeedKeyEvent: new Event('webkitneedkey'),
       webkitKeyMessageEvent: new Event('webkitkeymessage'),
@@ -26,36 +25,53 @@ describe('emeListeners', function() {
     listener = new EmeListeners();
     spyOn(EmeListeners, 'logCall');
     spyOn(EmeListeners, 'logEvent');
-    mockFn = jasmine.createSpy('mockFn').and.returnValue(Promise.resolve());
+    spyOn(EmeListeners, 'logPromiseResult');
+    mockFn = jasmine.createSpy('mockFn').and.returnValue(Promise.resolve({}));
+    async = [];
   });
 
-  it('logs calls on navigator object', function() {
+  it('logs calls on navigator object', function(done) {
     navigator.requestMediaKeySystemAccess = mockFn;
     listener.addListenersToNavigator_();
-    navigator.requestMediaKeySystemAccess('fakeKeySystem', ['fakeConfig']);
-    expect(mockFn.calls.count()).toEqual(1);
-    expectLogCall(
-      'RequestMediaKeySystemAccessCall',
-      ['fakeKeySystem', ['fakeConfig']],
-      ['keySystem', 'supportedConfigurations'],
-      navigator);
+    async.push(
+      navigator.requestMediaKeySystemAccess('fakeKeySystem', ['fakeConfig']));
+    Promise.all(async).then(function() {
+      expect(mockFn.calls.count()).toEqual(1);
+      expect(EmeListeners.logPromiseResult.calls.count()).toEqual(1);
+      expectLogCall(
+        'RequestMediaKeySystemAccessCall',
+        ['fakeKeySystem', ['fakeConfig']],
+        ['keySystem', 'supportedConfigurations'],
+        navigator);
+      done();
+    }).catch(function(err) {
+      fail(err);
+      done();
+    });
   });
 
-  it('logs calls on MediaKeySystemAccess object', function() {
+  it('logs calls on MediaKeySystemAccess object', function(done) {
     var mockMediaKeySystemAccess = {
       getConfiguration: mockFn,
       createMediaKeys: mockFn
     };
     listener.addListenersToMediaKeySystemAccess_(mockMediaKeySystemAccess);
-    mockMediaKeySystemAccess.getConfiguration();
-    mockMediaKeySystemAccess.createMediaKeys();
-    expect(EmeListeners.logCall.calls.count()).toEqual(2);
-    expect(mockFn.calls.count()).toEqual(2);
-    expectLogCall('GetConfigurationCall', [], [], mockMediaKeySystemAccess);
-    expectLogCall('CreateMediaKeysCall', [], [], mockMediaKeySystemAccess);
+    async.push(mockMediaKeySystemAccess.getConfiguration());
+    async.push(mockMediaKeySystemAccess.createMediaKeys());
+    Promise.all(async).then(function() {
+      expect(EmeListeners.logCall.calls.count()).toEqual(2);
+      expect(EmeListeners.logPromiseResult.calls.count()).toEqual(2);
+      expect(mockFn.calls.count()).toEqual(2);
+      expectLogCall('GetConfigurationCall', [], [], mockMediaKeySystemAccess);
+      expectLogCall('CreateMediaKeysCall', [], [], mockMediaKeySystemAccess);
+      done();
+    }).catch(function(err) {
+      fail(err);
+      done();
+    });
   });
 
-  it('logs calls on MediaKeys object', function() {
+  it('logs calls on MediaKeys object', function(done) {
     // Catch call to this method.
     spyOn(listener, 'addListenersToMediaKeySession_');
     var mockMediaKeys = {
@@ -63,23 +79,30 @@ describe('emeListeners', function() {
       setServerCertificate: mockFn
     };
     listener.addListenersToMediaKeys_(mockMediaKeys);
-    mockMediaKeys.createSession('fakeSessionType');
-    mockMediaKeys.setServerCertificate('fakeServerCertificate');
-    expect(EmeListeners.logCall.calls.count()).toEqual(2);
-    expect(mockFn.calls.count()).toEqual(2);
-    expectLogCall(
-      'CreateSessionCall',
-      ['fakeSessionType'],
-      ['sessionType'],
-      mockMediaKeys);
-    expectLogCall(
-      'SetServerCertificateCall',
-      ['fakeServerCertificate'],
-      ['serverCertificate'],
-      mockMediaKeys);
+    async.push(mockMediaKeys.createSession('fakeSessionType'));
+    async.push(mockMediaKeys.setServerCertificate('fakeServerCertificate'));
+    Promise.all(async).then(function() {
+      expect(EmeListeners.logCall.calls.count()).toEqual(2);
+      expect(EmeListeners.logPromiseResult.calls.count()).toEqual(2);
+      expect(mockFn.calls.count()).toEqual(2);
+      expectLogCall(
+        'CreateSessionCall',
+        ['fakeSessionType'],
+        ['sessionType'],
+        mockMediaKeys);
+      expectLogCall(
+        'SetServerCertificateCall',
+        ['fakeServerCertificate'],
+        ['serverCertificate'],
+        mockMediaKeys);
+      done();
+    }).catch(function(err) {
+      fail(err);
+      done();
+    });
   });
 
-  it('logs calls on MediaKeySession object', function() {
+  it('logs calls on MediaKeySession object', function(done) {
     var mockMediaKeySession = {
       generateRequest: mockFn,
       load: mockFn,
@@ -89,31 +112,39 @@ describe('emeListeners', function() {
       addEventListener: mockFn
     };
     listener.addListenersToMediaKeySession_(mockMediaKeySession);
-    mockMediaKeySession.generateRequest('fakeInitDataType', 'fakeInitData');
-    mockMediaKeySession.load('fakeSessionId');
-    mockMediaKeySession.update('fakeResponse');
-    mockMediaKeySession.close();
-    mockMediaKeySession.remove();
-    expect(EmeListeners.logCall.calls.count()).toEqual(5);
-    // Expect for each logged call and twice for addEventListener
-    expect(mockFn.calls.count()).toEqual(7);
-    expectLogCall(
-      'GenerateRequestCall',
-      ['fakeInitDataType', 'fakeInitData'],
-      ['initDataType', 'initData'],
-      mockMediaKeySession);
-    expectLogCall(
-      'LoadCall',
-      ['fakeSessionId'],
-      ['sessionId'],
-      mockMediaKeySession);
-    expectLogCall(
-      'UpdateCall',
-      ['fakeResponse'],
-      ['response'],
-      mockMediaKeySession);
-    expectLogCall('CloseCall', [], [], mockMediaKeySession);
-    expectLogCall('RemoveCall', [], [], mockMediaKeySession);
+    async.push(
+      mockMediaKeySession.generateRequest('fakeInitDataType', 'fakeInitData'));
+    async.push(mockMediaKeySession.load('fakeSessionId'));
+    async.push(mockMediaKeySession.update('fakeResponse'));
+    async.push(mockMediaKeySession.close());
+    async.push(mockMediaKeySession.remove());
+    Promise.all(async).then(function() {
+      expect(EmeListeners.logCall.calls.count()).toEqual(5);
+      expect(EmeListeners.logPromiseResult.calls.count()).toEqual(5);
+      // Expect for each logged call and twice for addEventListener
+      expect(mockFn.calls.count()).toEqual(7);
+      expectLogCall(
+        'GenerateRequestCall',
+        ['fakeInitDataType', 'fakeInitData'],
+        ['initDataType', 'initData'],
+        mockMediaKeySession);
+      expectLogCall(
+        'LoadCall',
+        ['fakeSessionId'],
+        ['sessionId'],
+        mockMediaKeySession);
+      expectLogCall(
+        'UpdateCall',
+        ['fakeResponse'],
+        ['response'],
+        mockMediaKeySession);
+      expectLogCall('CloseCall', [], [], mockMediaKeySession);
+      expectLogCall('RemoveCall', [], [], mockMediaKeySession);
+      done();
+    }).catch(function(err) {
+      fail(err);
+      done();
+    });
   });
 
   it('logs events on MediaKeySession object', function() {
@@ -128,7 +159,7 @@ describe('emeListeners', function() {
     expectLogEvent('keyStatusesChangeEvent');
   });
 
-  it('logs prefixed eme calls on HTMLMedia element', function() {
+  it('logs prefixed eme calls on HTMLMedia element', function(done) {
     listener.prefixedEmeEnabled = true;
     listener.unprefixedEmeEnabled = false;
     var mockHtmlMedia = {
@@ -139,35 +170,44 @@ describe('emeListeners', function() {
       play: mockFn
     };
     listener.addEmeMethodListeners_(mockHtmlMedia);
-    mockHtmlMedia.canPlayType('fakeType', 'fakeKeySystem');
-    mockHtmlMedia.webkitGenerateKeyRequest('fakeKeySystem', 'fakeInitData');
-    mockHtmlMedia.webkitAddKey(
-        'fakeKeySystem', 'fakeKey', 'fakeInitData', 'fakeSessionId');
-    mockHtmlMedia.webkitCancelKeyRequest('fakeKeySystem', 'fakeSessionId');
-    mockHtmlMedia.play();
-    expect(EmeListeners.logCall.calls.count()).toEqual(5);
-    expect(mockFn.calls.count()).toEqual(5);
-    expectLogCall(
-      'CanPlayTypeCall',
-      ['fakeType', 'fakeKeySystem'],
-      ['type', 'keySystem'],
-      mockHtmlMedia);
-    expectLogCall(
-      'GenerateKeyRequestCall',
-      ['fakeKeySystem', 'fakeInitData'],
-      ['keySystem', 'initData'],
-      mockHtmlMedia);
-    expectLogCall(
-      'AddKeyCall',
-      ['fakeKeySystem', 'fakeKey', 'fakeInitData', 'fakeSessionId'],
-      ['keySystem', 'key', 'initData', 'sessionId'],
-      mockHtmlMedia);
-    expectLogCall(
-      'CancelKeyRequestCall',
-      ['fakeKeySystem', 'fakeSessionId'],
-      ['keySystem', 'sessionId'],
-      mockHtmlMedia);
-    expectLogCall('PlayCall', [], [], mockHtmlMedia);
+    async.push(mockHtmlMedia.canPlayType('fakeType', 'fakeKeySystem'));
+    async.push(mockHtmlMedia.webkitGenerateKeyRequest(
+        'fakeKeySystem', 'fakeInitData'));
+    async.push(mockHtmlMedia.webkitAddKey(
+        'fakeKeySystem', 'fakeKey', 'fakeInitData', 'fakeSessionId'));
+    async.push(mockHtmlMedia.webkitCancelKeyRequest(
+        'fakeKeySystem', 'fakeSessionId'));
+    async.push(mockHtmlMedia.play());
+    Promise.all(async).then(function() {
+      expect(EmeListeners.logCall.calls.count()).toEqual(5);
+      expect(EmeListeners.logPromiseResult.calls.count()).toEqual(5);
+      expect(mockFn.calls.count()).toEqual(5);
+      expectLogCall(
+        'CanPlayTypeCall',
+        ['fakeType', 'fakeKeySystem'],
+        ['type', 'keySystem'],
+        mockHtmlMedia);
+      expectLogCall(
+        'GenerateKeyRequestCall',
+        ['fakeKeySystem', 'fakeInitData'],
+        ['keySystem', 'initData'],
+        mockHtmlMedia);
+      expectLogCall(
+        'AddKeyCall',
+        ['fakeKeySystem', 'fakeKey', 'fakeInitData', 'fakeSessionId'],
+        ['keySystem', 'key', 'initData', 'sessionId'],
+        mockHtmlMedia);
+      expectLogCall(
+        'CancelKeyRequestCall',
+        ['fakeKeySystem', 'fakeSessionId'],
+        ['keySystem', 'sessionId'],
+        mockHtmlMedia);
+      expectLogCall('PlayCall', [], [], mockHtmlMedia);
+      done();
+    }).catch(function(err) {
+      fail(err);
+      done();
+    });
   });
 
   it('logs prefixed eme events on HTMLMedia element', function() {
@@ -188,7 +228,7 @@ describe('emeListeners', function() {
     expectLogEvent('encryptedEvent');
   });
 
-  it('logs unprefixed eme calls on HTMLMedia element', function() {
+  it('logs unprefixed eme calls on HTMLMedia element', function(done) {
     listener.prefixedEmeEnabled = false;
     listener.unprefixedEmeEnabled = true;
     var mockHtmlMedia = {
@@ -196,13 +236,20 @@ describe('emeListeners', function() {
       play: mockFn
     };
     listener.addEmeMethodListeners_(mockHtmlMedia);
-    mockHtmlMedia.setMediaKeys('fakeMediaKeys');
-    mockHtmlMedia.play();
-    expect(EmeListeners.logCall.calls.count()).toEqual(2);
-    expect(mockFn.calls.count()).toEqual(2);
-    expectLogCall(
-      'SetMediaKeysCall', ['fakeMediaKeys'], ['MediaKeys'], mockHtmlMedia);
-    expectLogCall('PlayCall', [], [], mockHtmlMedia);
+    async.push(mockHtmlMedia.setMediaKeys('fakeMediaKeys'));
+    async.push(mockHtmlMedia.play());
+    Promise.all(async).then(function() {
+      expect(EmeListeners.logCall.calls.count()).toEqual(2);
+      expect(EmeListeners.logPromiseResult.calls.count()).toEqual(2);
+      expect(mockFn.calls.count()).toEqual(2);
+      expectLogCall(
+        'SetMediaKeysCall', ['fakeMediaKeys'], ['MediaKeys'], mockHtmlMedia);
+      expectLogCall('PlayCall', [], [], mockHtmlMedia);
+      done();
+    }).catch(function(err) {
+      fail(err);
+      done();
+    });
   });
 
   it('logs unprefixed eme events on HTMLMedia element', function() {

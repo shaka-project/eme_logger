@@ -66,10 +66,10 @@ EmeListeners.prototype.addListenersToNavigator_ = function() {
   navigator.requestMediaKeySystemAccess = function() {
     var result = originalRequestMediaKeySystemAccessFn.apply(null, arguments);
     // Attach listeners to returned MediaKeySystemAccess object
-    result.then(function(mediaKeySystemAccess) {
+    return result.then(function(mediaKeySystemAccess) {
       this.addListenersToMediaKeySystemAccess_(mediaKeySystemAccess);
+      return Promise.resolve(mediaKeySystemAccess);
     }.bind(this));
-    return result;
   }.bind(this);
 
   navigator.listenersAdded_ = true;
@@ -101,10 +101,10 @@ EmeListeners.prototype.addListenersToMediaKeySystemAccess_ =
   mediaKeySystemAccess.createMediaKeys = function() {
     var result = originalCreateMediaKeysFn.apply(null, arguments);
     // Attach listeners to returned MediaKeys object
-    result.then(function(mediaKeys) {
+    return result.then(function(mediaKeys) {
       this.addListenersToMediaKeys_(mediaKeys);
+      return Promise.resolve(mediaKeys);
     }.bind(this));
-    return result;
   }.bind(this);
 
   mediaKeySystemAccess.listenersAdded_ = true;
@@ -330,6 +330,16 @@ EmeListeners.extendEmeMethod = function(element,
     var result = originalFn.apply(element, arguments);
     EmeListeners.logCall(
       title, [].slice.call(arguments), argumentLabels, result, element);
+    if (result.constructor.name == 'Promise') {
+      var description = title + ' Promise Result';
+      result = result.then(function(resultObject) {
+        EmeListeners.logPromiseResult(description, 'resolved', resultObject);
+        return Promise.resolve(resultObject);
+      }).catch(function(error) {
+        EmeListeners.logPromiseResult(description, 'rejected', error);
+        return Promise.reject(error);
+      });
+    }
     return result;
   };
 };
@@ -357,7 +367,7 @@ EmeListeners.logCall = function(name, args, labels, result, target) {
 
 
 /**
- * Logs an event to the console and a separate frame
+ * Logs an event to the console and a separate frame.
  * @param {Event} event An EME event.
  */
 EmeListeners.logEvent = function(event) {
@@ -368,3 +378,17 @@ EmeListeners.logEvent = function(event) {
   console.log(logOutput);
 };
 
+
+/**
+ * Logs the result of a Promise to the console and a separate frame.
+ * @param {string} description A short description of this Promise.
+ * @param {string} status The status of this Promise.
+ * @param {Object} result The result of this Promise.
+ */
+EmeListeners.logPromiseResult = function(description, status, result) {
+  var logOutput = new emePrototypes.PromiseResult(description, status, result);
+  window.postMessage({data:
+                      JSON.parse(JSON.stringify(logOutput.getMessageObject())),
+                      type: 'emeLogMessage'}, '*');
+  console.log(logOutput);
+};

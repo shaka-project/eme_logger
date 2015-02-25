@@ -41,12 +41,12 @@ emePrototypes.EmeMethodCall = function(name, args, labels, result, target) {
  */
 emePrototypes.EmeMethodCall.prototype.getMessageObject = function() {
   var names = [].concat(this.argLabels);
-  var values = [].concat(this.argValues);
+  var values = this.argValues.map(emePrototypes.getMessagePassableObject);
   names.push('target');
-  values.push(this.target.element.constructor.name);
+  values.push(this.target.name);
   if (this.returned) {
     names.push('returned');
-    values.push(this.returned.constructor.name);
+    values.push(emePrototypes.getMessagePassableObject(this.returned));
   }
   var data = {
     title: this.name,
@@ -80,7 +80,7 @@ emePrototypes.EmeEvent.prototype.getMessageObject = function() {
     title: this.type + 'Event',
     names: ['type', 'time', 'event', 'target element'],
     values: [this.type, this.timeStamp, this.event.constructor.name,
-             this.target.element.constructor.name]
+             this.target.name]
   };
   return data;
 };
@@ -96,10 +96,61 @@ emePrototypes.TargetElement = function(element) {
   if (!element) {
     return;
   }
+  this.name = element.constructor.name;
   this.id = element.id;
   if (element.classList) {
     this.classes = element.classList.toString();
   }
   this.element = element;
+};
+
+
+/**
+ * PromiseResult contains the information resulting from a
+ * resolved/rejected Promise.
+ * @param {string} description A description of the Promise.
+ * @param {string} status Status of the Promise.
+ * @param {Object} result The result of the Promise.
+ * @constructor
+ */
+emePrototypes.PromiseResult = function(description, status, result) {
+  this.description = description;
+  this.status = status;
+  this.result = result;
+};
+
+
+/**
+ * Provides a simple representation of this instance to be used for messaging.
+ * @return {!emePrototypes.LogItemData} A message object representing
+ *    this prototype.
+ */
+emePrototypes.PromiseResult.prototype.getMessageObject = function() {
+  var data = {
+    title: this.description,
+    names: ['status', 'result'],
+    values: [this.status, emePrototypes.getMessagePassableObject(this.result)]
+  };
+  return data;
+};
+
+
+/**
+ * Utility method that creates a simplified version of an object to be used
+ * for messaging.
+ * @param {Object} item
+ * @return {Object}
+ */
+emePrototypes.getMessagePassableObject = function(item) {
+  var messageItem = item;
+  if (typeof item == 'object' && item != null) {
+    messageItem = { 'type': item.constructor.name };
+    for (var prop in item) {
+      if (item.hasOwnProperty(prop)) {
+        messageItem[prop] = item[prop];
+      }
+    }
+  }
+  return messageItem;
 };
 
