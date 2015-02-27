@@ -70,7 +70,7 @@ emeLogConstructor.convertTextToHtml = function(text) {
  * Opens a separate logging window.
  */
 emeLogConstructor.openWindow = function() {
-  loggingWindow = window.open('log.html', 'testwindow', 'width=700,height=600');
+  loggingWindow = window.open('log.html', 'EME Log', 'width=700,height=600');
 };
 
 
@@ -95,10 +95,12 @@ emeLogConstructor.isWindowOpen = function() {
  * Listens for messages from the content script to either open the logging
  * frame or append a log item to the current frame.
  */
-chrome.runtime.onMessage.addListener(
-    function(request, sender, sendResponse) {
-      if (loggingWindow) {
-        emeLogConstructor.appendLogItem(request.data.data);
-      }
-    });
+if (chrome.runtime) {
+  chrome.runtime.onMessage.addListener(
+      function(request, sender, sendResponse) {
+        if (loggingWindow) {
+          emeLogConstructor.appendLogItem(request.data.data);
+        }
+      });
+}
 

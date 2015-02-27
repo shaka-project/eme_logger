@@ -211,6 +211,7 @@ describe('emeListeners', function() {
   });
 
   it('logs prefixed eme events on HTMLMedia element', function() {
+    spyOn(console, 'error');
     listener.prefixedEmeEnabled = true;
     listener.unprefixedEmeEnabled = false;
     var mockHtmlMedia = document.createElement('media');
@@ -226,6 +227,7 @@ describe('emeListeners', function() {
     expectLogEvent('playEvent');
     expectLogEvent('errorEvent');
     expectLogEvent('encryptedEvent');
+    expect(console.error.calls.count()).toEqual(1);
   });
 
   it('logs unprefixed eme calls on HTMLMedia element', function(done) {
@@ -253,6 +255,7 @@ describe('emeListeners', function() {
   });
 
   it('logs unprefixed eme events on HTMLMedia element', function() {
+    spyOn(console, 'error');
     listener.prefixedEmeEnabled = false;
     listener.unprefixedEmeEnabled = true;
     var mockHtmlMedia = document.createElement('media');
@@ -264,6 +267,6 @@ describe('emeListeners', function() {
     expectLogEvent('playEvent');
     expectLogEvent('errorEvent');
     expectLogEvent('encryptedEvent');
+    expect(console.error.calls.count()).toEqual(1);
   });
-
 });
