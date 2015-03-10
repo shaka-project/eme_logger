@@ -23,10 +23,27 @@ describe('emeLogConstructor', function() {
         values: [{1: 2, 3: 4}, 'Value 2']
     };
     var expectedHtml = '<h3 style="color: blue">Test Data</h3>' +
-                       'Name 1: {<br>&nbsp&nbsp&nbsp&nbsp"1":&nbsp2,<br>' +
-                       '&nbsp&nbsp&nbsp&nbsp"3":&nbsp4<br>}<br>' +
+                       'Name 1: {<br>' +
+                       '&nbsp&nbsp&nbsp&nbsp"1":&nbsp2,<br>' +
+                       '&nbsp&nbsp&nbsp&nbsp"3":&nbsp4<br>' +
+                       '}<br>' +
                        'Name 2: Value&nbsp2<br>';
     expect(emeLogConstructor.buildHTMLLogItem(data)).toEqual(expectedHtml);
+  });
+
+  it('builds a text log item', function() {
+    var data = {
+        title: 'Test Data',
+        names: ['Name 1', 'Name 2'],
+        values: [{1: 2, 3: 4}, 'Value 2']
+    };
+    var expectedText = 'Test Data\n' +
+                       'Name 1: {\n' +
+                       '    "1": 2,\n' +
+                       '    "3": 4\n' +
+                       '}\n' +
+                       'Name 2: Value 2\n\n';
+    expect(emeLogConstructor.buildTextLogItem(data)).toEqual(expectedText);
   });
 
   it('converts text to html', function() {

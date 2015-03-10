@@ -16,5 +16,6 @@
     "default_title": "EME Logger",
     "default_popup": "popup.html"
   },
+  "permissions": ["unlimitedStorage"],
   "web_accessible_resources": [ "mutation-summary.js", "prototypes.js", "eme_listeners.js" ]
 }

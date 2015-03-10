@@ -24,5 +24,13 @@ document.addEventListener('DOMContentLoaded', function() {
   loggingCheckbox.checked =
       chrome.extension.getBackgroundPage().emeLogConstructor.isWindowOpen();
   loggingCheckbox.addEventListener('click', emePopup.handleSeparateFrame);
+  var link = document.getElementById('option-download-file');
+  var href =
+      chrome.extension.getBackgroundPage().emeLogConstructor.getLogFileUrl();
+  if (href == '') {
+    link.disabled = true;
+  } else {
+    link.disabled = false;
+    link.href = href;
+  }
 });
-
