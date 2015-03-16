@@ -2,8 +2,7 @@
  * @fileoverview Maintains the separate frame logging.
  */
 
-// TODO(natalieharris): Determine if this can be converted to an event page or
-// if it is an exception to the extension best practices
+
 var emeLogConstructor = {};
 var loggingWindow;
 

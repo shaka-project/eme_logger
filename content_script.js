@@ -2,8 +2,6 @@
  * @fileoverview Does necessary set up for the EME Logger extension.
  */
 
-// TODO(natalieharris): Add unit tests for all js files.
-
 // Load required scripts into the current web page.
 var urls = ['/mutation-summary.js', '/prototypes.js', '/eme_listeners.js'];
 for (var i = 0; i < urls.length; i++) {

@@ -173,9 +173,6 @@ EmeListeners.prototype.addListenersToMediaKeySession_ = function(session) {
 };
 
 
-// TODO(natalieharris): Provide an option to enable tracking from
-// document.createElement with warning that it will break sites using NodeBind
-// and Polymer
 /**
  * Adds listeners to all currently created media elements and sets up a
  * mutation-summary observer to add listeners to any newly created media
@@ -345,7 +342,6 @@ EmeListeners.extendEmeMethod = function(element,
 };
 
 
-// TODO(natalieharris): Add option of logging to a file.
 /**
  * Logs a method call to the console and a separate frame.
  * @param {string} name The name of the method.
