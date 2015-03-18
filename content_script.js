@@ -10,7 +10,7 @@ for (var i = 0; i < urls.length; i++) {
   // We cannot load the main script using '.src' because such scripts are not
   // guaranteed to run immediately.
   var xhr = new XMLHttpRequest();
-  xhr.open('GET', mainScriptUrl, false);
+  xhr.open('GET', mainScriptUrl, true);
   xhr.send();
 
   var mainScript = document.createElement('script');
