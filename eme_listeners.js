@@ -327,7 +327,7 @@ EmeListeners.extendEmeMethod = function(element,
     var result = originalFn.apply(element, arguments);
     EmeListeners.logCall(
       title, [].slice.call(arguments), argumentLabels, result, element);
-    if (result.constructor.name == 'Promise') {
+    if (result && result.constructor.name == 'Promise') {
       var description = title + ' Promise Result';
       result = result.then(function(resultObject) {
         EmeListeners.logPromiseResult(description, 'resolved', resultObject);

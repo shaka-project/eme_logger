@@ -11,14 +11,18 @@ for (var i = 0; i < urls.length; i++) {
   // guaranteed to run immediately.
   var xhr = new XMLHttpRequest();
   xhr.open('GET', mainScriptUrl, true);
-  xhr.send();
 
-  var mainScript = document.createElement('script');
-  mainScript.type = 'application/javascript';
-  if (xhr.status == 200) {
-    mainScript.text = xhr.responseText;
-    document.documentElement.appendChild(mainScript);
-  }
+  xhr.onload = function(e) {
+    var xhr = e.target;
+    var mainScript = document.createElement('script');
+    mainScript.type = 'application/javascript';
+    if (xhr.status == 200) {
+      mainScript.text = xhr.responseText;
+      document.documentElement.appendChild(mainScript);
+    }
+  };
+
+  xhr.send();
 }
 
 // Listen for message events posted from EmeListeners, then forwards
