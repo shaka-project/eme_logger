@@ -102,6 +102,7 @@ EmeListeners.prototype.addListenersToMediaKeySystemAccess_ =
     var result = originalCreateMediaKeysFn.apply(null, arguments);
     // Attach listeners to returned MediaKeys object
     return result.then(function(mediaKeys) {
+      mediaKeys.keySystem_ = mediaKeySystemAccess.keySystem;
       this.addListenersToMediaKeys_(mediaKeys);
       return Promise.resolve(mediaKeys);
     }.bind(this));
@@ -124,6 +125,7 @@ EmeListeners.prototype.addListenersToMediaKeys_ = function(mediaKeys) {
       mediaKeys, mediaKeys.createSession, 'CreateSessionCall', ['sessionType']);
   mediaKeys.createSession = function() {
     var result = originalCreateSessionFn.apply(null, arguments);
+    result.keySystem_ = mediaKeys.keySystem_;
     // Attach listeners to returned MediaKeySession object
     this.addListenersToMediaKeySession_(result);
     return result;
@@ -157,7 +159,12 @@ EmeListeners.prototype.addListenersToMediaKeySession_ = function(session) {
       session, session.load, 'LoadCall', ['sessionId']);
 
   session.update = EmeListeners.extendEmeMethod(
-        session, session.update, 'UpdateCall', ['response']);
+      session,
+      session.update,
+      'UpdateCall',
+      ['response'],
+      0,
+      session.keySystem_);
 
   session.close = EmeListeners.extendEmeMethod(
       session, session.close, 'CloseCall', []);
@@ -165,7 +172,10 @@ EmeListeners.prototype.addListenersToMediaKeySession_ = function(session) {
   session.remove = EmeListeners.extendEmeMethod(
       session, session.remove, 'RemoveCall', []);
 
-  session.addEventListener('message', EmeListeners.logEvent);
+  session.addEventListener('message', function(e) {
+    e.keySystem = session.keySystem_;
+    EmeListeners.logEvent(e);
+  });
 
   session.addEventListener('keystatuseschange', EmeListeners.logEvent);
 
@@ -292,7 +302,9 @@ EmeListeners.prototype.addEmeMethodListeners_ = function(element) {
         element,
         element.webkitAddKey,
         'AddKeyCall',
-        ['keySystem', 'key', 'initData', 'sessionId']);
+        ['keySystem', 'key', 'initData', 'sessionId'],
+        1,
+        0);
 
     element.webkitCancelKeyRequest = EmeListeners.extendEmeMethod(
         element,
@@ -302,7 +314,7 @@ EmeListeners.prototype.addEmeMethodListeners_ = function(element) {
 
   } else if (this.unprefixedEmeEnabled) {
     element.setMediaKeys = EmeListeners.extendEmeMethod(
-      element, element.setMediaKeys, 'SetMediaKeysCall', ['MediaKeys']);
+        element, element.setMediaKeys, 'SetMediaKeysCall', ['MediaKeys']);
   }
 
   element.methodListenersAdded_ = true;
@@ -317,16 +329,20 @@ EmeListeners.prototype.addEmeMethodListeners_ = function(element) {
  * @param {string} title The title used to refer to this function.
  * @param {Array.<string>} argumentLabels An array of labels used to identify
  *    each of this functions arguments.
+ * @param {?number} dataIndex Index of key data in arguments.
+ * @param {?number|string} keySystem Index of keySystem in arguments or the
+ *    keySystem itself.
  * @return {Function} The extended version of orginalFn.
  */
-EmeListeners.extendEmeMethod = function(element,
-                                        originalFn,
-                                        title,
-                                        argumentLabels) {
+EmeListeners.extendEmeMethod = function(
+    element, originalFn, title, argumentLabels, dataIndex, keySystem) {
   return function() {
     var result = originalFn.apply(element, arguments);
+    var args = [].slice.call(arguments);
+    var data = isNaN(dataIndex) ? null : args[dataIndex];
+    var currentKeySystem = isNaN(keySystem) ? keySystem : args[keySystem];
     EmeListeners.logCall(
-      title, [].slice.call(arguments), argumentLabels, result, element);
+        title, args, argumentLabels, result, element, data, currentKeySystem);
     if (result && result.constructor.name == 'Promise') {
       var description = title + ' Promise Result';
       result = result.then(function(resultObject) {
@@ -351,10 +367,13 @@ EmeListeners.extendEmeMethod = function(element,
  *    is longer than |args| extra labels will be ignored.
  * @param {Object} result The result of this method call.
  * @param {Object} target The element this method was called on.
+ * @param {Object} data The EME data to be parsed from this call.
+ * @param {string} keySystem The key system used in this call.
  */
-EmeListeners.logCall = function(name, args, labels, result, target) {
+EmeListeners.logCall = function(
+    name, args, labels, result, target, data, keySystem) {
   var logOutput = new emePrototypes.EmeMethodCall(
-      name, args, labels, result, target);
+      name, args, labels, result, target, data, keySystem);
   window.postMessage({data:
                       JSON.parse(JSON.stringify(logOutput.getMessageObject())),
                       type: 'emeLogMessage'}, '*');

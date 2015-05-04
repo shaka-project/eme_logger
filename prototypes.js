@@ -23,14 +23,19 @@ emePrototypes.LogItemData;
  *    correspond in length to the args array. Need to be in order with the args.
  * @param {Object} result The result of this method call.
  * @param {Element} target The element this method was called on.
+ * @param {Object} data The EME data to be parsed from the Event/Call.
+ * @param {string} keySystem The keySystem used for this Event/Call.
  * @constructor
  */
-emePrototypes.EmeMethodCall = function(name, args, labels, result, target) {
+emePrototypes.EmeMethodCall = function(
+    name, args, labels, result, target, data, keySystem) {
   this.name = name;
   this.argValues = args;
   this.argLabels = labels.slice(0, args.length);
   this.returned = result;
   this.target = new emePrototypes.TargetElement(target);
+  this.formattedMessage =
+      emePrototypes.getFormattedMessage(this.name, data, keySystem);
 };
 
 
@@ -47,6 +52,10 @@ emePrototypes.EmeMethodCall.prototype.getMessageObject = function() {
   if (this.returned) {
     names.push('returned');
     values.push(emePrototypes.getMessagePassableObject(this.returned));
+  }
+  if (this.formattedMessage) {
+    names.push('formatted message');
+    values.push(this.formattedMessage);
   }
   var data = {
     title: this.name,
@@ -67,6 +76,8 @@ emePrototypes.EmeEvent = function(e) {
   this.event = e;
   this.timeStamp = new Date(e.timeStamp).toString();
   this.target = new emePrototypes.TargetElement(e.target);
+  this.formattedMessage = emePrototypes.getFormattedMessage(
+      this.event.type, this.event.message, this.event.keySystem);
 };
 
 
@@ -82,9 +93,54 @@ emePrototypes.EmeEvent.prototype.getMessageObject = function() {
     values: [this.type, this.timeStamp, this.event.constructor.name,
              this.target.name]
   };
+  if (this.formattedMessage) {
+    data.names.push('formatted message');
+    data.values.push(this.formattedMessage);
+  }
   return data;
 };
 
+
+/**
+ * Gets a formatted message from the EME Formatters.
+ * @param {string} name The name of the Event or Call being logged.
+ * @param {Object} data The EME data to be parsed from the Event/Call.
+ * @param {string} keySystem The keySystem used for this Event/Call.
+ * @return {string|undefined} The formatted message.
+ */
+emePrototypes.getFormattedMessage = function(name, data, keySystem) {
+  if (!document.emeFormatters) {
+    return;
+  }
+
+  var formattedMessage = '';
+  for (var i = 0; i < document.emeFormatters.length; i++) {
+    var formatter = document.emeFormatters[i];
+    var formatFunctionName = 'format' + name;
+    if (!formatter[formatFunctionName]) {
+      continue;
+    }
+    // Only use formatters that support the |keySystem|, if specified.
+    // (|keySystem| is not specified for some events.)
+    if (keySystem && !formatter.isKeySystemSupported(keySystem)) {
+      continue;
+    }
+    try {
+      formattedMessage += formatter[formatFunctionName](data);
+      if (i > 0) {
+        formattedMessage += '\n';
+      }
+    } catch (e) {
+      console.warn('Formatter', formatter, 'failed:', e);
+    }
+  }
+
+  if (formattedMessage == '') {
+    return;
+  }
+
+  return formattedMessage;
+};
 
 /**
  * TargetElement pulls out the useful information from the element for easy
