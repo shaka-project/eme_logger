@@ -213,7 +213,7 @@ EmeListeners.prototype.addListenersToAllEmeElements_ = function() {
   });
 
   var applyListeners = function(summaries) {
-    for (var i = 0; i < this.NUM_MEDIA_ELEMENT_TYPES; i++) {
+    for (var i = 0; i < EmeListeners.NUM_MEDIA_ELEMENT_TYPES; i++) {
       var elements = summaries[i];
       elements.added.forEach(function(element) {
         this.addListenersToEmeElement_(element, true);
