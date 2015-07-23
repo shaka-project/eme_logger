@@ -17,6 +17,8 @@
  */
 
 console.info('eme_logger.js loaded.');
+console.info('Some identifiable information may be in the log. Be careful ' +
+    'about posting the log on bug reports.');
 
 
 /** After content is loaded, set up the EME listeners. */
