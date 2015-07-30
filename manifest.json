@@ -5,7 +5,7 @@
   "manifest_version": 2,
   "description": "Logs all Encrypted Media Extensions (EME) method calls and events.",
   "content_scripts": [{
-    "matches": ["http://*/*", "https://*/*"],
+    "matches": ["http://*/*", "https://*/*", "file://*"],
     "js": ["content_script.js"],
     "run_at": "document_start"
   }],

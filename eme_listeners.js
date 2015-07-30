@@ -27,8 +27,6 @@ function onDOMContentLoaded_() {
   listener.setUpListeners();
 }
 
-document.addEventListener('DOMContentLoaded', onDOMContentLoaded_);
-
 
 /**
  * Manager for EME event and method listeners.
@@ -423,3 +421,10 @@ EmeListeners.logPromiseResult = function(description, status, result) {
                       type: 'emeLogMessage'}, '*');
   console.log(logOutput);
 };
+
+
+if (document.readyState == 'interactive' || document.readyState == 'complete') {
+  onDOMContentLoaded_();
+} else {
+  document.addEventListener('DOMContentLoaded', onDOMContentLoaded_);
+}
