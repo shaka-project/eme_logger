@@ -34,10 +34,11 @@ emePopup.handleSeparateFrame = function(e) {
 
 
 document.addEventListener('DOMContentLoaded', function() {
-  var loggingCheckbox = document.querySelector('#option-separate-frame');
-  loggingCheckbox.checked =
-      chrome.extension.getBackgroundPage().emeLogConstructor.isWindowOpen();
-  loggingCheckbox.addEventListener('click', emePopup.handleSeparateFrame);
+  var loggingButton = document.querySelector('#option-separate-frame');
+  loggingButton.innerHTML =
+      chrome.extension.getBackgroundPage().emeLogConstructor.isWindowOpen() ?
+      'Close log window' : 'Open log window';
+  loggingButton.addEventListener('click', emePopup.handleSeparateFrame);
   var link = document.getElementById('option-download-file');
   var href =
       chrome.extension.getBackgroundPage().emeLogConstructor.getLogFileUrl();
