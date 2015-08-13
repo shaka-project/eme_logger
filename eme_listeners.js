@@ -21,8 +21,8 @@ console.info('Some identifiable information may be in the log. Be careful ' +
     'about posting the log on bug reports.');
 
 
-/** After content is loaded, set up the EME listeners. */
-function onDOMContentLoaded_() {
+/** Set up the EME listeners. */
+function setUp_() {
   var listener = new EmeListeners();
   listener.setUpListeners();
 }
@@ -51,16 +51,18 @@ EmeListeners.NUM_MEDIA_ELEMENT_TYPES = 3;
  * Sets up EME listeners for whichever type of EME is enabled.
  */
 EmeListeners.prototype.setUpListeners = function() {
+  if (!this.unprefixedEmeEnabled && !this.prefixedEmeEnabled) {
+    console.log('EME not available.');
+    return;
+  }
   if (this.unprefixedEmeEnabled) {
     console.log('Unprefixed EME is enabled.');
     this.addListenersToNavigator_();
-    this.addListenersToAllEmeElements_();
-  } else if (this.prefixedEmeEnabled) {
-    console.log('Prefixed EME is enabled.');
-    this.addListenersToAllEmeElements_();
-  } else {
-    console.log('EME not available.');
   }
+  if (this.prefixedEmeEnabled) {
+    console.log('Prefixed EME is enabled.');
+  }
+  this.addListenersToAllEmeElements_();
 };
 
 
@@ -239,9 +241,6 @@ EmeListeners.prototype.addEmeListenersToInitialMediaElements_ = function() {
   var mediaElements = document.getElementsByTagName('media');
   for (var i = 0; i < mediaElements.length; ++i) {
     this.addListenersToEmeElement_(mediaElements[i], false);
-  }
-  if (audioElements.length + videoElements.length + mediaElements.length == 0) {
-    console.warn('No media elements found in document.');
   }
 };
 
@@ -422,9 +421,4 @@ EmeListeners.logPromiseResult = function(description, status, result) {
   console.log(logOutput);
 };
 
-
-if (document.readyState == 'interactive' || document.readyState == 'complete') {
-  onDOMContentLoaded_();
-} else {
-  document.addEventListener('DOMContentLoaded', onDOMContentLoaded_);
-}
+setUp_();
