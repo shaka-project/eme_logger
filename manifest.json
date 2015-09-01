@@ -1,7 +1,7 @@
 {
   "name": "EME Call and Event Logger",
   "short_name": "EME Logger",
-  "version": "1.4",
+  "version": "1.5",
   "manifest_version": 2,
   "description": "Logs all Encrypted Media Extensions (EME) method calls and events.",
   "content_scripts": [{
@@ -9,6 +9,12 @@
     "js": ["content_script.js"],
     "run_at": "document_start"
   }],
+  "icons": {
+    "22": "EME_logo_22.png",
+    "32": "EME_logo_32.png",
+    "48": "EME_logo_48.png",
+    "128": "EME_logo_128.png"
+  },
   "background" : {
     "scripts": ["log_constructor.js"]
   },
