@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * @fileoverview emePrototypes unit tests.
+ * @fileoverview emeLogger unit tests.
  */
 
-describe('emePrototypes', function() {
+describe('emeLogger', function() {
   describe('EmeMethodCall', function() {
     var defaultMethodCall;
 
     beforeEach(function() {
-      defaultMethodCall = new emePrototypes.EmeMethodCall(
+      defaultMethodCall = new emeLogger.EmeMethodCall(
         'TestMethodCall',
         ['arg1', ['arg 2 array']],
         ['Argument 1', 'Argument 2'],
@@ -48,7 +48,7 @@ describe('emePrototypes', function() {
     beforeEach(function() {
       var event = new Event('Test');
       document.dispatchEvent(event);
-      defaultEvent = new emePrototypes.EmeEvent(event);
+      defaultEvent = new emeLogger.EmeEvent(event);
     });
 
     it('constructs an event message object', function() {
@@ -68,7 +68,7 @@ describe('emePrototypes', function() {
     var defaultPromise;
 
     beforeEach(function() {
-      defaultPromise = new emePrototypes.PromiseResult(
+      defaultPromise = new emeLogger.PromiseResult(
         'Promise Result Description', 'resolved', {result: 'Result Object'});
     });
 

@@ -385,7 +385,7 @@ EmeListeners.extendEmeMethod = function(
  */
 EmeListeners.logCall = function(
     name, args, labels, result, target, data, keySystem) {
-  var logOutput = new emePrototypes.EmeMethodCall(
+  var logOutput = new emeLogger.EmeMethodCall(
       name, args, labels, result, target, data, keySystem);
   window.postMessage({data:
                       JSON.parse(JSON.stringify(logOutput.getMessageObject())),
@@ -399,7 +399,7 @@ EmeListeners.logCall = function(
  * @param {Event} event An EME event.
  */
 EmeListeners.logEvent = function(event) {
-  var logOutput = new emePrototypes.EmeEvent(event);
+  var logOutput = new emeLogger.EmeEvent(event);
   window.postMessage({data:
                       JSON.parse(JSON.stringify(logOutput.getMessageObject())),
                       type: 'emeLogMessage'}, '*');
@@ -414,7 +414,7 @@ EmeListeners.logEvent = function(event) {
  * @param {Object} result The result of this Promise.
  */
 EmeListeners.logPromiseResult = function(description, status, result) {
-  var logOutput = new emePrototypes.PromiseResult(description, status, result);
+  var logOutput = new emeLogger.PromiseResult(description, status, result);
   window.postMessage({data:
                       JSON.parse(JSON.stringify(logOutput.getMessageObject())),
                       type: 'emeLogMessage'}, '*');
