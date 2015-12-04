@@ -387,9 +387,8 @@ EmeListeners.logCall = function(
     name, args, labels, result, target, data, keySystem) {
   var logOutput = new emeLogger.EmeMethodCall(
       name, args, labels, result, target, data, keySystem);
-  window.postMessage({data:
-                      JSON.parse(JSON.stringify(logOutput.getMessageObject())),
-                      type: 'emeLogMessage'}, '*');
+  var message = emeLogger.getMessagePassableObject(logOutput);
+  window.postMessage({data: message, type: 'emeLogMessage'}, '*');
   console.log(logOutput);
 };
 
@@ -400,9 +399,8 @@ EmeListeners.logCall = function(
  */
 EmeListeners.logEvent = function(event) {
   var logOutput = new emeLogger.EmeEvent(event);
-  window.postMessage({data:
-                      JSON.parse(JSON.stringify(logOutput.getMessageObject())),
-                      type: 'emeLogMessage'}, '*');
+  var message = emeLogger.getMessagePassableObject(logOutput);
+  window.postMessage({data: message, type: 'emeLogMessage'}, '*');
   console.log(logOutput);
 };
 
@@ -415,9 +413,8 @@ EmeListeners.logEvent = function(event) {
  */
 EmeListeners.logPromiseResult = function(description, status, result) {
   var logOutput = new emeLogger.PromiseResult(description, status, result);
-  window.postMessage({data:
-                      JSON.parse(JSON.stringify(logOutput.getMessageObject())),
-                      type: 'emeLogMessage'}, '*');
+  var message = emeLogger.getMessagePassableObject(logOutput);
+  window.postMessage({data: message, type: 'emeLogMessage'}, '*');
   console.log(logOutput);
 };
 

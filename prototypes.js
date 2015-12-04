@@ -43,40 +43,14 @@ emeLogger.LogItemData;
  */
 emeLogger.EmeMethodCall = function(
     name, args, labels, result, target, data, keySystem) {
-  this.name = name;
-  this.argValues = args;
-  this.argLabels = labels.slice(0, args.length);
+  this.title = name;
+  for (var i = 0; i < args.length; i++) {
+    this[labels[i]] = args[i];
+  }
   this.returned = result;
-  this.target = new emeLogger.TargetElement(target);
+  this.target = new emeLogger.TargetObject(target);
   this.formattedMessage =
       emeLogger.getFormattedMessage(this.name, data, keySystem);
-};
-
-
-/**
- * Provides a simple representation of this instance to be used for messaging.
- * @return {!emeLogger.LogItemData} A message object representing
- *    this prototype.
- */
-emeLogger.EmeMethodCall.prototype.getMessageObject = function() {
-  var names = [].concat(this.argLabels);
-  var values = this.argValues.map(emeLogger.getMessagePassableObject);
-  names.push('target');
-  values.push(this.target.name);
-  if (this.returned) {
-    names.push('returned');
-    values.push(emeLogger.getMessagePassableObject(this.returned));
-  }
-  if (this.formattedMessage) {
-    names.push('formatted message');
-    values.push(this.formattedMessage);
-  }
-  var data = {
-    title: this.name,
-    names: names,
-    values: values
-  };
-  return data;
 };
 
 
@@ -86,32 +60,12 @@ emeLogger.EmeMethodCall.prototype.getMessageObject = function() {
  * @constructor
  */
 emeLogger.EmeEvent = function(e) {
-  this.type = e.type;
+  this.title = e.type + 'Event';
   this.event = e;
   this.timeStamp = new Date(e.timeStamp).toString();
-  this.target = new emeLogger.TargetElement(e.target);
+  this.target = new emeLogger.TargetObject(e.target);
   this.formattedMessage = emeLogger.getFormattedMessage(
       this.event.type, this.event.message, this.event.keySystem);
-};
-
-
-/**
- * Provides a simple representation of this instance to be used for messaging.
- * @return {!emeLogger.LogItemData} A message object representing
- *    this prototype.
- */
-emeLogger.EmeEvent.prototype.getMessageObject = function() {
-  var data = {
-    title: this.type + 'Event',
-    names: ['type', 'time', 'event', 'target element'],
-    values: [this.type, this.timeStamp, this.event.constructor.name,
-             this.target.name]
-  };
-  if (this.formattedMessage) {
-    data.names.push('formatted message');
-    data.values.push(this.formattedMessage);
-  }
-  return data;
 };
 
 
@@ -156,71 +110,71 @@ emeLogger.getFormattedMessage = function(name, data, keySystem) {
   return formattedMessage;
 };
 
+
 /**
- * TargetElement pulls out the useful information from the element for easy
- * access while also providing access to the entire element.
- * @param {Element} element An HTML element.
+ * TargetObject pulls out the useful information from the object.
+ * @param {Object} obj The target object.
  * @constructor
  */
-emeLogger.TargetElement = function(element) {
-  if (!element) {
+emeLogger.TargetObject = function(obj) {
+  if (!obj) {
     return;
   }
-  this.name = element.constructor.name;
-  this.id = element.id;
-  if (element.classList) {
-    this.classes = element.classList.toString();
+  this.title = obj.constructor.name;
+  this.id = obj.id;
+  if (obj.classList) {
+    this.classes = obj.classList.toString();
   }
-  this.element = element;
 };
 
 
 /**
  * PromiseResult contains the information resulting from a
  * resolved/rejected Promise.
- * @param {string} description A description of the Promise.
+ * @param {string} title A title used to describe this Promise.
  * @param {string} status Status of the Promise.
  * @param {Object} result The result of the Promise.
  * @constructor
  */
-emeLogger.PromiseResult = function(description, status, result) {
-  this.description = description;
+emeLogger.PromiseResult = function(title, status, result) {
+  this.title = title;
   this.status = status;
   this.result = result;
 };
 
 
 /**
- * Provides a simple representation of this instance to be used for messaging.
- * @return {!emeLogger.LogItemData} A message object representing
- *    this prototype.
+ * Provides a simple representation of obj to be used for messaging. The
+ * names and values returned in emeLogger.LogItemData will only reflect the
+ * object's direct properties.
+ * @param {Object} obj An object to format into emeLogger.LogItemData.
+ * @return {!emeLogger.LogItemData} A formatted object.
  */
-emeLogger.PromiseResult.prototype.getMessageObject = function() {
-  var data = {
-    title: this.description,
-    names: ['status', 'result'],
-    values: [this.status, emeLogger.getMessagePassableObject(this.result)]
-  };
-  return data;
-};
-
-
-/**
- * Utility method that creates a simplified version of an object to be used
- * for messaging.
- * @param {Object} item
- * @return {Object}
- */
-emeLogger.getMessagePassableObject = function(item) {
-  var messageItem = item;
-  if (typeof item == 'object' && item != null) {
-    messageItem = { 'type': item.constructor.name };
-    for (var prop in item) {
-      if (item.hasOwnProperty(prop)) {
-        messageItem[prop] = item[prop];
+emeLogger.getMessagePassableObject = function(obj) {
+  var names = [];
+  var values = [];
+  for (var prop in obj) {
+    if (prop == 'title') continue;
+    // We only care about direct properties of the object. Calling
+    // hasOwnProperty will stop from checking down the object's prototype chain.
+    if (obj.hasOwnProperty(prop)) {
+      if (typeof(obj[prop]) == 'function') continue;
+      names.push(prop);
+      if (typeof(obj[prop]) == 'object' && obj[prop] != null) {
+        // Give ArrayBuffers a view so they can be properly logged.
+        var value = obj[prop].constructor.name == 'ArrayBuffer' ?
+            new Uint8Array(obj[prop]) : obj[prop];
+        values.push(emeLogger.getMessagePassableObject(value));
+      } else {
+        values.push(obj[prop]);
       }
     }
   }
-  return messageItem;
+  var data = {
+    title: obj.title || obj.constructor.name,
+    names: names,
+    values: values
+  };
+  return data;
 };
 

@@ -30,15 +30,26 @@ describe('emeLogger', function() {
     });
 
     it('constructs a method call message object', function() {
-      var methodMessageObject = defaultMethodCall.getMessageObject();
-      expect(methodMessageObject.title).toEqual('TestMethodCall');
-      expect(methodMessageObject.names).toEqual(
-          ['Argument 1', 'Argument 2', 'target', 'returned']);
-      expect(methodMessageObject.values).toEqual(
-          ['arg1',
-           {0: 'arg 2 array', type: 'Array'},
-           'HTMLVideoElement',
-           {type: 'Object', resultName: 'Name', resultValue: 'Result Value'}]);
+      var result = emeLogger.getMessagePassableObject(defaultMethodCall);
+      expect(result.title).toEqual('TestMethodCall');
+      expect(result.names).toEqual([
+          'Argument 1',
+          'Argument 2',
+          'returned',
+          'target',
+          'formattedMessage']);
+      expect(result.values[0]).toEqual('arg1');
+      expect(result.values[1]).toEqual(
+          {title: 'Array', names: ['0'], values: ['arg 2 array']});
+      expect(result.values[2]).toEqual(
+          {title: 'Object',
+          names: ['resultName', 'resultValue'],
+          values: ['Name', 'Result Value']});
+      expect(result.values[3]).toEqual(
+          {title: 'HTMLVideoElement',
+          names: ['id', 'classes'],
+          values: ['', '']});
+      expect(result.values[4]).toEqual(undefined);
     });
   });
 
@@ -52,15 +63,17 @@ describe('emeLogger', function() {
     });
 
     it('constructs an event message object', function() {
-      var eventMessageObject = defaultEvent.getMessageObject();
-      expect(eventMessageObject.title).toEqual('TestEvent');
-      expect(eventMessageObject.names).toEqual(
-          ['type', 'time', 'event', 'target element']);
-      expect(eventMessageObject.values).toEqual(
-          ['Test',
-           new Date(event.timeStamp).toString(),
-           'Event',
-           'HTMLDocument']);
+      var result = emeLogger.getMessagePassableObject(defaultEvent);
+      expect(result.title).toEqual('TestEvent');
+      expect(result.names).toEqual(
+          ['event', 'timeStamp', 'target', 'formattedMessage']);
+      expect(result.values[0]).toEqual(
+          {title: 'Event', names: ['isTrusted'], values: [false]});
+      // Value 1 will be the string timeStamp
+      expect(result.values[1]).toEqual(jasmine.any(String));
+      expect(result.values[2]).toEqual(
+          {title: 'HTMLDocument', names: ['id'], values: [undefined]});
+      expect(result.values[3]).toEqual(undefined);
     });
   });
 
@@ -73,14 +86,12 @@ describe('emeLogger', function() {
     });
 
     it('constructs a promise result message object', function() {
-      var promiseResultMessageObject = defaultPromise.getMessageObject();
-      expect(promiseResultMessageObject.title).toEqual(
-        'Promise Result Description');
-      expect(promiseResultMessageObject.names).toEqual(
-          ['status', 'result']);
-      expect(promiseResultMessageObject.values).toEqual(
-          ['resolved',
-           {type: 'Object', result: 'Result Object'}]);
+      var result = emeLogger.getMessagePassableObject(defaultPromise);
+      expect(result.title).toEqual('Promise Result Description');
+      expect(result.names).toEqual(['status', 'result']);
+      expect(result.values[0]).toEqual('resolved');
+      expect(result.values[1]).toEqual(
+          {title: 'Object', names: ['result'], values: ['Result Object']});
     });
   });
 });
