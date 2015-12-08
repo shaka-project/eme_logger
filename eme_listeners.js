@@ -77,8 +77,7 @@ EmeListeners.prototype.addListenersToNavigator_ = function() {
   var originalRequestMediaKeySystemAccessFn = EmeListeners.extendEmeMethod(
       navigator,
       navigator.requestMediaKeySystemAccess,
-      'RequestMediaKeySystemAccessCall',
-      ['keySystem', 'supportedConfigurations']);
+      emeLogger.RequestMediaKeySystemAccessCall);
   navigator.requestMediaKeySystemAccess = function() {
     var result = originalRequestMediaKeySystemAccessFn.apply(null, arguments);
     // Attach listeners to returned MediaKeySystemAccess object
@@ -106,14 +105,12 @@ EmeListeners.prototype.addListenersToMediaKeySystemAccess_ =
   mediaKeySystemAccess.getConfiguration = EmeListeners.extendEmeMethod(
       mediaKeySystemAccess,
       mediaKeySystemAccess.getConfiguration,
-      'GetConfigurationCall',
-      []);
+      emeLogger.GetConfigurationCall);
 
   var originalCreateMediaKeysFn = EmeListeners.extendEmeMethod(
       mediaKeySystemAccess,
       mediaKeySystemAccess.createMediaKeys,
-      'CreateMediaKeysCall',
-      []);
+      emeLogger.CreateMediaKeysCall);
   mediaKeySystemAccess.createMediaKeys = function() {
     var result = originalCreateMediaKeysFn.apply(null, arguments);
     // Attach listeners to returned MediaKeys object
@@ -138,7 +135,7 @@ EmeListeners.prototype.addListenersToMediaKeys_ = function(mediaKeys) {
     return;
   }
   var originalCreateSessionFn = EmeListeners.extendEmeMethod(
-      mediaKeys, mediaKeys.createSession, 'CreateSessionCall', ['sessionType']);
+      mediaKeys, mediaKeys.createSession, emeLogger.CreateSessionCall);
   mediaKeys.createSession = function() {
     var result = originalCreateSessionFn.apply(null, arguments);
     result.keySystem_ = mediaKeys.keySystem_;
@@ -150,8 +147,7 @@ EmeListeners.prototype.addListenersToMediaKeys_ = function(mediaKeys) {
   mediaKeys.setServerCertificate = EmeListeners.extendEmeMethod(
       mediaKeys,
       mediaKeys.setServerCertificate,
-      'SetServerCertificateCall',
-      ['serverCertificate']);
+      emeLogger.SetServerCertificateCall);
   mediaKeys.listenersAdded_ = true;
 };
 
@@ -168,32 +164,29 @@ EmeListeners.prototype.addListenersToMediaKeySession_ = function(session) {
   session.generateRequest = EmeListeners.extendEmeMethod(
       session,
       session.generateRequest,
-      'GenerateRequestCall',
-      ['initDataType', 'initData']);
+      emeLogger.GenerateRequestCall);
 
   session.load = EmeListeners.extendEmeMethod(
-      session, session.load, 'LoadCall', ['sessionId']);
+      session, session.load, emeLogger.LoadCall);
 
   session.update = EmeListeners.extendEmeMethod(
       session,
       session.update,
-      'UpdateCall',
-      ['response'],
-      0,
-      session.keySystem_);
+      emeLogger.UpdateCall);
 
   session.close = EmeListeners.extendEmeMethod(
-      session, session.close, 'CloseCall', []);
+      session, session.close, emeLogger.CloseCall);
 
   session.remove = EmeListeners.extendEmeMethod(
-      session, session.remove, 'RemoveCall', []);
+      session, session.remove, emeLogger.RemoveCall);
 
   session.addEventListener('message', function(e) {
     e.keySystem = session.keySystem_;
-    EmeListeners.logEvent(e);
+    EmeListeners.logEvent(emeLogger.MessageEvent, e);
   });
 
-  session.addEventListener('keystatuseschange', EmeListeners.logEvent);
+  session.addEventListener('keystatuseschange',
+      EmeListeners.logEvent.bind(null, emeLogger.KeyStatusesChangeEvent));
 
   session.listenersAdded_ = true;
 };
@@ -267,22 +260,28 @@ EmeListeners.prototype.addEmeEventListeners_ = function(element) {
     return;
   }
   if (this.prefixedEmeEnabled) {
-    element.addEventListener('webkitneedkey', EmeListeners.logEvent);
+    element.addEventListener('webkitneedkey',
+        EmeListeners.logEvent.bind(null, emeLogger.NeedKeyEvent));
 
-    element.addEventListener('webkitkeymessage', EmeListeners.logEvent);
+    element.addEventListener('webkitkeymessage',
+        EmeListeners.logEvent.bind(null, emeLogger.KeyMessageEvent));
 
-    element.addEventListener('webkitkeyadded', EmeListeners.logEvent);
+    element.addEventListener('webkitkeyadded',
+        EmeListeners.logEvent.bind(null, emeLogger.KeyAddedEvent));
 
-    element.addEventListener('webkitkeyerror', EmeListeners.logEvent);
+    element.addEventListener('webkitkeyerror',
+        EmeListeners.logEvent.bind(null, emeLogger.KeyErrorEvent));
   }
 
-  element.addEventListener('encrypted', EmeListeners.logEvent);
+  element.addEventListener('encrypted',
+      EmeListeners.logEvent.bind(null, emeLogger.EncryptedEvent));
 
-  element.addEventListener('play', EmeListeners.logEvent);
+  element.addEventListener('play',
+      EmeListeners.logEvent.bind(null, emeLogger.PlayEvent));
 
   element.addEventListener('error', function(e) {
     console.error('Error Event');
-    EmeListeners.logEvent(e);
+    EmeListeners.logEvent(emeLogger.ErrorEvent, e);
   });
 
   element.eventListenersAdded_ = true;
@@ -299,35 +298,32 @@ EmeListeners.prototype.addEmeMethodListeners_ = function(element) {
     return;
   }
   element.play = EmeListeners.extendEmeMethod(
-    element, element.play, 'PlayCall', []);
+      element, element.play, emeLogger.PlayCall);
 
   if (this.prefixedEmeEnabled) {
     element.canPlayType = EmeListeners.extendEmeMethod(
-      element, element.canPlayType, 'CanPlayTypeCall', ['type', 'keySystem']);
+        element, element.canPlayType, emeLogger.CanPlayTypeCall);
 
     element.webkitGenerateKeyRequest = EmeListeners.extendEmeMethod(
         element,
         element.webkitGenerateKeyRequest,
-        'GenerateKeyRequestCall',
-        ['keySystem', 'initData']);
+        emeLogger.GenerateKeyRequestCall);
 
     element.webkitAddKey = EmeListeners.extendEmeMethod(
         element,
         element.webkitAddKey,
-        'AddKeyCall',
-        ['keySystem', 'key', 'initData', 'sessionId'],
-        1,
-        0);
+        emeLogger.AddKeyCall);
 
     element.webkitCancelKeyRequest = EmeListeners.extendEmeMethod(
         element,
         element.webkitCancelKeyRequest,
-        'CancelKeyRequestCall',
-        ['keySystem', 'sessionId']);
+        emeLogger.CancelKeyRequestCall);
 
-  } else if (this.unprefixedEmeEnabled) {
+  }
+
+  if (this.unprefixedEmeEnabled) {
     element.setMediaKeys = EmeListeners.extendEmeMethod(
-        element, element.setMediaKeys, 'SetMediaKeysCall', ['MediaKeys']);
+        element, element.setMediaKeys, emeLogger.SetMediaKeysCall);
   }
 
   element.methodListenersAdded_ = true;
@@ -336,28 +332,20 @@ EmeListeners.prototype.addEmeMethodListeners_ = function(element) {
 
 /**
  * Creates a wrapper function that logs calls to the given method.
- * @param {Object} element An element or object whose function
- *    will be extended.
- * @param {Function} originalFn The function to add logging to.
- * @param {string} title The title used to refer to this function.
- * @param {Array.<string>} argumentLabels An array of labels used to identify
- *    each of this functions arguments.
- * @param {?number} dataIndex Index of key data in arguments.
- * @param {?number|string} keySystem Index of keySystem in arguments or the
- *    keySystem itself.
- * @return {Function} The extended version of orginalFn.
+ * @param {!Object} element An element or object whose function
+ *    call will be logged.
+ * @param {!Function} originalFn The function to log.
+ * @param {!Function} constructor The constructor for a logger class that will
+ *    be instantiated to log the originalFn call.
+ * @return {!Function} The new version, with logging, of orginalFn.
  */
-EmeListeners.extendEmeMethod = function(
-    element, originalFn, title, argumentLabels, dataIndex, keySystem) {
+EmeListeners.extendEmeMethod = function(element, originalFn, constructor) {
   return function() {
     var result = originalFn.apply(element, arguments);
     var args = [].slice.call(arguments);
-    var data = isNaN(dataIndex) ? null : args[dataIndex];
-    var currentKeySystem = isNaN(keySystem) ? keySystem : args[keySystem];
-    EmeListeners.logCall(
-        title, args, argumentLabels, result, element, data, currentKeySystem);
+    var logObject = EmeListeners.logCall(constructor, args, result, element);
     if (result && result.constructor.name == 'Promise') {
-      var description = title + ' Promise Result';
+      var description = logObject.title + ' Promise Result';
       result = result.then(function(resultObject) {
         EmeListeners.logPromiseResult(description, 'resolved', resultObject);
         return Promise.resolve(resultObject);
@@ -373,49 +361,58 @@ EmeListeners.extendEmeMethod = function(
 
 /**
  * Logs a method call to the console and a separate frame.
- * @param {string} name The name of the method.
+ * @param {!Function} constructor The constructor for a logger class that will
+ *    be instantiated to log this call.
  * @param {Array} args The arguments this call was made with.
- * @param {Array.<string>} labels A list of the types of arguments. Should
- *    correspond in length to |args| and be in same order as |args|. If |labels|
- *    is longer than |args| extra labels will be ignored.
  * @param {Object} result The result of this method call.
- * @param {Object} target The element this method was called on.
- * @param {Object} data The EME data to be parsed from this call.
- * @param {string} keySystem The key system used in this call.
+ * @param {!Object} target The element this method was called on.
+ * @return {!emeLogger.EmeMethodCall} The data that has been logged.
  */
-EmeListeners.logCall = function(
-    name, args, labels, result, target, data, keySystem) {
-  var logOutput = new emeLogger.EmeMethodCall(
-      name, args, labels, result, target, data, keySystem);
-  var message = emeLogger.getMessagePassableObject(logOutput);
-  window.postMessage({data: message, type: 'emeLogMessage'}, '*');
-  console.log(logOutput);
+EmeListeners.logCall = function(constructor, args, result, target) {
+  var logObject = new constructor(args, target, result);
+  EmeListeners.logAndPostMessage_(logObject);
+  return logObject;
 };
 
 
 /**
  * Logs an event to the console and a separate frame.
- * @param {Event} event An EME event.
+ * @param {!Function} constructor The constructor for a logger class that will
+ *    be instantiated to log this event.
+ * @param {!Event} event An EME event.
+ * @return {!emeLogger.EmeEvent} The data that has been logged.
  */
-EmeListeners.logEvent = function(event) {
-  var logOutput = new emeLogger.EmeEvent(event);
-  var message = emeLogger.getMessagePassableObject(logOutput);
-  window.postMessage({data: message, type: 'emeLogMessage'}, '*');
-  console.log(logOutput);
+EmeListeners.logEvent = function(constructor, event) {
+  var logObject = new constructor(event);
+  EmeListeners.logAndPostMessage_(logObject);
+  return logObject;
 };
 
 
 /**
  * Logs the result of a Promise to the console and a separate frame.
- * @param {string} description A short description of this Promise.
+ * @param {string} title A short description of this Promise.
  * @param {string} status The status of this Promise.
  * @param {Object} result The result of this Promise.
+ * @return {!emeLogger.PromiseResult} The data that has been logged.
  */
-EmeListeners.logPromiseResult = function(description, status, result) {
-  var logOutput = new emeLogger.PromiseResult(description, status, result);
-  var message = emeLogger.getMessagePassableObject(logOutput);
+EmeListeners.logPromiseResult = function(title, status, result) {
+  var logObject = new emeLogger.PromiseResult(title, status, result);
+  EmeListeners.logAndPostMessage_(logObject);
+  return logObject;
+};
+
+
+/**
+ * Logs the object to the console and posts it in a message.
+ * @param {emeLogger.EmeEvent|emeLogger.EmeMethodCall|emeLogger.PromiseResult}
+ *    logObject The object to log.
+ * @private
+ */
+EmeListeners.logAndPostMessage_ = function(logObject) {
+  var message = emeLogger.getMessagePassableObject(logObject);
   window.postMessage({data: message, type: 'emeLogMessage'}, '*');
-  console.log(logOutput);
+  console.log(logObject);
 };
 
 setUp_();

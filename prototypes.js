@@ -23,7 +23,7 @@ var emeLogger = {};
  * @typedef {{
  *   title: string,
  *   names: !Array.<string>,
- *   values: !Array.<string|Object>
+ *   values: !Array.<*>
  * }}
  */
 emeLogger.LogItemData;
@@ -31,41 +31,29 @@ emeLogger.LogItemData;
 
 /**
  * Method call prototype.
- * @param {string} name The name of the method.
- * @param {!Array} args The arguments this call was made with.
- * @param {!Array.<string>} labels A list of the types of arguments. Should
- *    correspond in length to the args array. Need to be in order with the args.
- * @param {Object} result The result of this method call.
- * @param {Element} target The element this method was called on.
- * @param {Object} data The EME data to be parsed from the Event/Call.
- * @param {string} keySystem The keySystem used for this Event/Call.
+ * @param {string} title The title used to describe this call.
+ * @param {!Object} target The element this method was called on.
+ * @param {Object} result The object returned from this call, if any.
  * @constructor
  */
-emeLogger.EmeMethodCall = function(
-    name, args, labels, result, target, data, keySystem) {
-  this.title = name;
-  for (var i = 0; i < args.length; i++) {
-    this[labels[i]] = args[i];
-  }
-  this.returned = result;
+emeLogger.EmeMethodCall = function(title, target, result) {
+  this.title = title;
   this.target = new emeLogger.TargetObject(target);
-  this.formattedMessage =
-      emeLogger.getFormattedMessage(this.name, data, keySystem);
+  this.returned = result;
 };
 
 
 /**
  * EME Event prototype.
+ * @param {string} title The title used to describe this event.
  * @param {Event} e An EME event.
  * @constructor
  */
-emeLogger.EmeEvent = function(e) {
-  this.title = e.type + 'Event';
+emeLogger.EmeEvent = function(title, e) {
+  this.title = title;
   this.event = e;
   this.timeStamp = new Date(e.timeStamp).toString();
   this.target = new emeLogger.TargetObject(e.target);
-  this.formattedMessage = emeLogger.getFormattedMessage(
-      this.event.type, this.event.message, this.event.keySystem);
 };
 
 
@@ -131,7 +119,7 @@ emeLogger.TargetObject = function(obj) {
 /**
  * PromiseResult contains the information resulting from a
  * resolved/rejected Promise.
- * @param {string} title A title used to describe this Promise.
+ * @param {string} title The title used to describe this Promise.
  * @param {string} status Status of the Promise.
  * @param {Object} result The result of the Promise.
  * @constructor
@@ -177,4 +165,451 @@ emeLogger.getMessagePassableObject = function(obj) {
   };
   return data;
 };
+
+
+/** Typed Event Prototypes **/
+
+/**
+ * Message event prototype.
+ * @param {Event} e
+ * @extends {emeLogger.EmeEvent}
+ * @constructor
+ */
+emeLogger.MessageEvent = function(e) {
+  emeLogger.EmeEvent.apply(this, ['MessageEvent', e]);
+  // If a formatter extension is available, message will be formatted.
+  this.formattedMessage = emeLogger.getFormattedMessage(
+      'message', e.message, e.keySystem);
+};
+emeLogger.MessageEvent.prototype = Object.create(emeLogger.EmeEvent.prototype);
+/** @constructor */
+emeLogger.MessageEvent.prototype.constructor = emeLogger.MessageEvent;
+
+
+/**
+ * KeyStatusesChange event prototype.
+ * @param {Event} e
+ * @extends {emeLogger.EmeEvent}
+ * @constructor
+ */
+emeLogger.KeyStatusesChangeEvent = function(e) {
+  emeLogger.EmeEvent.apply(this, ['KeyStatusesChangeEvent', e]);
+};
+emeLogger.KeyStatusesChangeEvent.prototype =
+    Object.create(emeLogger.EmeEvent.prototype);
+/** @constructor */
+emeLogger.KeyStatusesChangeEvent.prototype.constructor =
+    emeLogger.KeyStatusesChangeEvent;
+
+
+/**
+ * NeedKey event prototype.
+ * @param {Event} e
+ * @extends {emeLogger.EmeEvent}
+ * @constructor
+ */
+emeLogger.NeedKeyEvent = function(e) {
+  emeLogger.EmeEvent.apply(this, ['NeedKeyEvent', e]);
+};
+emeLogger.NeedKeyEvent.prototype = Object.create(emeLogger.EmeEvent.prototype);
+/** @constructor */
+emeLogger.NeedKeyEvent.prototype.constructor = emeLogger.NeedKeyEvent;
+
+
+/**
+ * KeyMessage event prototype.
+ * @param {Event} e
+ * @extends {emeLogger.EmeEvent}
+ * @constructor
+ */
+emeLogger.KeyMessageEvent = function(e) {
+  emeLogger.EmeEvent.apply(this, ['KeyMessageEvent', e]);
+  // If a formatter extension is available, message will be formatted.
+  this.formattedMessage = emeLogger.getFormattedMessage(
+      'webkitkeymessage', e.message, e.keySystem);
+};
+emeLogger.KeyMessageEvent.prototype =
+    Object.create(emeLogger.EmeEvent.prototype);
+/** @constructor */
+emeLogger.KeyMessageEvent.prototype.constructor = emeLogger.KeyMessageEvent;
+
+
+/**
+ * KeyAdded event prototype.
+ * @param {Event} e
+ * @extends {emeLogger.EmeEvent}
+ * @constructor
+ */
+emeLogger.KeyAddedEvent = function(e) {
+  emeLogger.EmeEvent.apply(this, ['KeyAddedEvent', e]);
+};
+emeLogger.KeyAddedEvent.prototype = Object.create(emeLogger.EmeEvent.prototype);
+/** @constructor */
+emeLogger.KeyAddedEvent.prototype.constructor = emeLogger.KeyAddedEvent;
+
+
+/**
+ * KeyError event prototype.
+ * @param {Event} e
+ * @extends {emeLogger.EmeEvent}
+ * @constructor
+ */
+emeLogger.KeyErrorEvent = function(e) {
+  emeLogger.EmeEvent.apply(this, ['KeyErrorEvent', e]);
+};
+emeLogger.KeyErrorEvent.prototype =
+    Object.create(emeLogger.EmeEvent.prototype);
+/** @constructor */
+emeLogger.KeyErrorEvent.prototype.constructor = emeLogger.KeyErrorEvent;
+
+
+/**
+ * Encrypted event prototype.
+ * @param {Event} e
+ * @extends {emeLogger.EmeEvent}
+ * @constructor
+ */
+emeLogger.EncryptedEvent = function(e) {
+  emeLogger.EmeEvent.apply(this, ['EncryptedEvent', e]);
+};
+emeLogger.EncryptedEvent.prototype =
+    Object.create(emeLogger.EmeEvent.prototype);
+/** @constructor */
+emeLogger.EncryptedEvent.prototype.constructor = emeLogger.EncryptedEvent;
+
+
+/**
+ * Play event prototype.
+ * @param {Event} e
+ * @extends {emeLogger.EmeEvent}
+ * @constructor
+ */
+emeLogger.PlayEvent = function(e) {
+  emeLogger.EmeEvent.apply(this, ['PlayEvent', e]);
+};
+emeLogger.PlayEvent.prototype = Object.create(emeLogger.EmeEvent.prototype);
+/** @constructor */
+emeLogger.PlayEvent.prototype.constructor = emeLogger.PlayEvent;
+
+
+/**
+ * Error event prototype.
+ * @param {Event} e
+ * @extends {emeLogger.EmeEvent}
+ * @constructor
+ */
+emeLogger.ErrorEvent = function(e) {
+  emeLogger.EmeEvent.apply(this, ['ErrorEvent', e]);
+};
+emeLogger.ErrorEvent.prototype = Object.create(emeLogger.EmeEvent.prototype);
+/** @constructor */
+emeLogger.ErrorEvent.prototype.constructor = emeLogger.ErrorEvent;
+
+
+/** Typed Method Call Prototypes **/
+
+/**
+ * RequestMediaKeySystemAccess call prototype.
+ * @param {Array} args
+ * @param {Element} target
+ * @param {Object} result
+ * @extends {emeLogger.EmeMethodCall}
+ * @constructor
+ */
+emeLogger.RequestMediaKeySystemAccessCall = function(args, target, result) {
+  emeLogger.EmeMethodCall.apply(
+      this, ['RequestMediaKeySystemAccessCall', target, result]);
+  this.keySystem = args[0];
+  this.supportedConfigurations = args[1];
+};
+emeLogger.RequestMediaKeySystemAccessCall.prototype =
+    Object.create(emeLogger.EmeMethodCall.prototype);
+/** @constructor */
+emeLogger.RequestMediaKeySystemAccessCall.prototype.constructor =
+    emeLogger.RequestMediaKeySystemAccessCall;
+
+
+/**
+ * GetConfiguration call prototype.
+ * @param {Array} args
+ * @param {Element} target
+ * @param {Object} result
+ * @extends {emeLogger.EmeMethodCall}
+ * @constructor
+ */
+emeLogger.GetConfigurationCall = function(args, target, result) {
+  emeLogger.EmeMethodCall.apply(this, ['GetConfigurationCall', target, result]);
+};
+emeLogger.GetConfigurationCall.prototype =
+    Object.create(emeLogger.EmeMethodCall.prototype);
+/** @constructor */
+emeLogger.GetConfigurationCall.prototype.constructor =
+    emeLogger.GetConfigurationCall;
+
+
+/**
+ * CreateMediaKeys call prototype.
+ * @param {Array} args
+ * @param {Element} target
+ * @param {Object} result
+ * @extends {emeLogger.EmeMethodCall}
+ * @constructor
+ */
+emeLogger.CreateMediaKeysCall = function(args, target, result) {
+  emeLogger.EmeMethodCall.apply(this, ['CreateMediaKeysCall', target, result]);
+};
+emeLogger.CreateMediaKeysCall.prototype =
+    Object.create(emeLogger.EmeMethodCall.prototype);
+/** @constructor */
+emeLogger.CreateMediaKeysCall.prototype.constructor =
+    emeLogger.CreateMediaKeysCall;
+
+
+/**
+ * CreateSession call prototype.
+ * @param {Array} args
+ * @param {Element} target
+ * @param {Object} result
+ * @extends {emeLogger.EmeMethodCall}
+ * @constructor
+ */
+emeLogger.CreateSessionCall = function(args, target, result) {
+  emeLogger.EmeMethodCall.apply(this, ['CreateSessionCall', target, result]);
+  this.sessionType = args[0];
+};
+emeLogger.CreateSessionCall.prototype =
+    Object.create(emeLogger.EmeMethodCall.prototype);
+/** @constructor */
+emeLogger.CreateSessionCall.prototype.constructor = emeLogger.CreateSessionCall;
+
+
+/**
+ * SetServerCertificate call prototype.
+ * @param {Array} args
+ * @param {Element} target
+ * @param {Object} result
+ * @extends {emeLogger.EmeMethodCall}
+ * @constructor
+ */
+emeLogger.SetServerCertificateCall = function(args, target, result) {
+  emeLogger.EmeMethodCall.apply(
+      this, ['SetServerCertificateCall', target, result]);
+  this.serverCertificate = args[0];
+};
+emeLogger.SetServerCertificateCall.prototype =
+    Object.create(emeLogger.EmeMethodCall.prototype);
+/** @constructor */
+emeLogger.SetServerCertificateCall.prototype.constructor =
+    emeLogger.SetServerCertificateCall;
+
+
+/**
+ * GenerateRequest call prototype.
+ * @param {Array} args
+ * @param {Element} target
+ * @param {Object} result
+ * @extends {emeLogger.EmeMethodCall}
+ * @constructor
+ */
+emeLogger.GenerateRequestCall = function(args, target, result) {
+  emeLogger.EmeMethodCall.apply(this, ['GenerateRequestCall', target, result]);
+  this.initDataType = args[0];
+  this.initData = args[1];
+};
+emeLogger.GenerateRequestCall.prototype =
+    Object.create(emeLogger.EmeMethodCall.prototype);
+/** @constructor */
+emeLogger.GenerateRequestCall.prototype.constructor =
+    emeLogger.GenerateRequestCall;
+
+
+/**
+ * Play call prototype.
+ * @param {Array} args
+ * @param {Element} target
+ * @param {Object} result
+ * @extends {emeLogger.EmeMethodCall}
+ * @constructor
+ */
+emeLogger.PlayCall = function(args, target, result) {
+  emeLogger.EmeMethodCall.apply(this, ['PlayCall', target, result]);
+};
+emeLogger.PlayCall.prototype = Object.create(emeLogger.EmeMethodCall.prototype);
+/** @constructor */
+emeLogger.PlayCall.prototype.constructor = emeLogger.PlayCall;
+
+
+/**
+ * Load call prototype.
+ * @param {Array} args
+ * @param {Element} target
+ * @param {Object} result
+ * @extends {emeLogger.EmeMethodCall}
+ * @constructor
+ */
+emeLogger.LoadCall = function(args, target, result) {
+  emeLogger.EmeMethodCall.apply(this, ['LoadCall', target, result]);
+  this.sessionId = args[0];
+};
+emeLogger.LoadCall.prototype = Object.create(emeLogger.EmeMethodCall.prototype);
+/** @constructor */
+emeLogger.LoadCall.prototype.constructor = emeLogger.LoadCall;
+
+
+/**
+ * Update call prototype.
+ * @param {Array} args
+ * @param {Element} target
+ * @param {Object} result
+ * @extends {emeLogger.EmeMethodCall}
+ * @constructor
+ */
+emeLogger.UpdateCall = function(args, target, result) {
+  emeLogger.EmeMethodCall.apply(this, ['UpdateCall', target, result]);
+  this.response = args[0];
+  // If a formatter extension is available, response will be formatted.
+  this.formattedMessage = emeLogger.getFormattedMessage(
+      'UpdateCall', this.response, target.keySystem_);
+};
+emeLogger.UpdateCall.prototype =
+    Object.create(emeLogger.EmeMethodCall.prototype);
+/** @constructor */
+emeLogger.UpdateCall.prototype.constructor = emeLogger.UpdateCall;
+
+
+/**
+ * Close call prototype.
+ * @param {Array} args
+ * @param {Element} target
+ * @param {Object} result
+ * @extends {emeLogger.EmeMethodCall}
+ * @constructor
+ */
+emeLogger.CloseCall = function(args, target, result) {
+  emeLogger.EmeMethodCall.apply(this, ['CloseCall', target, result]);
+};
+emeLogger.CloseCall.prototype =
+    Object.create(emeLogger.EmeMethodCall.prototype);
+/** @constructor */
+emeLogger.CloseCall.prototype.constructor = emeLogger.CloseCall;
+
+
+/**
+ * Remove call prototype.
+ * @param {Array} args
+ * @param {Element} target
+ * @param {Object} result
+ * @extends {emeLogger.EmeMethodCall}
+ * @constructor
+ */
+emeLogger.RemoveCall = function(args, target, result) {
+  emeLogger.EmeMethodCall.apply(this, ['RemoveCall', target, result]);
+};
+emeLogger.RemoveCall.prototype =
+    Object.create(emeLogger.EmeMethodCall.prototype);
+/** @constructor */
+emeLogger.RemoveCall.prototype.constructor = emeLogger.RemoveCall;
+
+
+/**
+ * CanPlayType call prototype.
+ * @param {Array} args
+ * @param {Element} target
+ * @param {Object} result
+ * @extends {emeLogger.EmeMethodCall}
+ * @constructor
+ */
+emeLogger.CanPlayTypeCall = function(args, target, result) {
+  emeLogger.EmeMethodCall.apply(this, ['CanPlayTypeCall', target, result]);
+  this.type = args[0];
+  this.keySystem = args[1];
+};
+emeLogger.CanPlayTypeCall.prototype =
+    Object.create(emeLogger.EmeMethodCall.prototype);
+/** @constructor */
+emeLogger.CanPlayTypeCall.prototype.constructor = emeLogger.CanPlayTypeCall;
+
+
+/**
+ * GenerateKeyRequest call prototype.
+ * @param {Array} args
+ * @param {Element} target
+ * @param {Object} result
+ * @extends {emeLogger.EmeMethodCall}
+ * @constructor
+ */
+emeLogger.GenerateKeyRequestCall = function(args, target, result) {
+  emeLogger.EmeMethodCall.apply(
+      this, ['GenerateKeyRequestCall', target, result]);
+  this.keySystem = args[0];
+  this.initData = args[1];
+};
+emeLogger.GenerateKeyRequestCall.prototype =
+    Object.create(emeLogger.EmeMethodCall.prototype);
+/** @constructor */
+emeLogger.GenerateKeyRequestCall.prototype.constructor =
+    emeLogger.GenerateKeyRequestCall;
+
+
+/**
+ * AddKey call prototype.
+ * @param {Array} args
+ * @param {Element} target
+ * @param {Object} result
+ * @extends {emeLogger.EmeMethodCall}
+ * @constructor
+ */
+emeLogger.AddKeyCall = function(args, target, result) {
+  emeLogger.EmeMethodCall.apply(this, ['AddKeyCall', target, result]);
+  this.keySystem = args[0];
+  this.key = args[1];
+  this.initData = args[2];
+  this.sessionId = args[3];
+  // If a formatter extension is available, key will be formatted.
+  this.formattedMessage = emeLogger.getFormattedMessage(
+      'AddKeyCall', this.key, this.keySystem);
+};
+emeLogger.AddKeyCall.prototype =
+    Object.create(emeLogger.EmeMethodCall.prototype);
+/** @constructor */
+emeLogger.AddKeyCall.prototype.constructor = emeLogger.AddKeyCall;
+
+
+/**
+ * CancelKeyRequest call prototype.
+ * @param {Array} args
+ * @param {Element} target
+ * @param {Object} result
+ * @extends {emeLogger.EmeMethodCall}
+ * @constructor
+ */
+emeLogger.CancelKeyRequestCall = function(args, target, result) {
+  emeLogger.EmeMethodCall.apply(this, ['CancelKeyRequestCall', target, result]);
+  this.keySystem = args[0];
+  this.sessionId = args[1];
+};
+emeLogger.CancelKeyRequestCall.prototype =
+    Object.create(emeLogger.EmeMethodCall.prototype);
+/** @constructor */
+emeLogger.CancelKeyRequestCall.prototype.constructor =
+    emeLogger.CancelKeyRequestCall;
+
+
+/**
+ * SetMediaKeys call prototype.
+ * @param {Array} args
+ * @param {Element} target
+ * @param {Object} result
+ * @extends {emeLogger.EmeMethodCall}
+ * @constructor
+ */
+emeLogger.SetMediaKeysCall = function(args, target, result) {
+  emeLogger.EmeMethodCall.apply(this, ['SetMediaKeysCall', target, result]);
+  this.mediaKeys = args[0];
+};
+emeLogger.SetMediaKeysCall.prototype =
+    Object.create(emeLogger.EmeMethodCall.prototype);
+/** @constructor */
+emeLogger.SetMediaKeysCall.prototype.constructor = emeLogger.SetMediaKeysCall;
+
 

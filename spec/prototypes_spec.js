@@ -23,33 +23,24 @@ describe('emeLogger', function() {
     beforeEach(function() {
       defaultMethodCall = new emeLogger.EmeMethodCall(
         'TestMethodCall',
-        ['arg1', ['arg 2 array']],
-        ['Argument 1', 'Argument 2'],
-        {resultName: 'Name', resultValue: 'Result Value'},
-        document.createElement('video'));
+        document.createElement('video'),
+        {resultName: 'Name', resultValue: 'Result Value'});
     });
 
     it('constructs a method call message object', function() {
       var result = emeLogger.getMessagePassableObject(defaultMethodCall);
       expect(result.title).toEqual('TestMethodCall');
       expect(result.names).toEqual([
-          'Argument 1',
-          'Argument 2',
-          'returned',
           'target',
-          'formattedMessage']);
-      expect(result.values[0]).toEqual('arg1');
-      expect(result.values[1]).toEqual(
-          {title: 'Array', names: ['0'], values: ['arg 2 array']});
-      expect(result.values[2]).toEqual(
-          {title: 'Object',
-          names: ['resultName', 'resultValue'],
-          values: ['Name', 'Result Value']});
-      expect(result.values[3]).toEqual(
+          'returned']);
+      expect(result.values[0]).toEqual(
           {title: 'HTMLVideoElement',
           names: ['id', 'classes'],
           values: ['', '']});
-      expect(result.values[4]).toEqual(undefined);
+      expect(result.values[1]).toEqual(
+          {title: 'Object',
+          names: ['resultName', 'resultValue'],
+          values: ['Name', 'Result Value']});
     });
   });
 
@@ -59,14 +50,14 @@ describe('emeLogger', function() {
     beforeEach(function() {
       var event = new Event('Test');
       document.dispatchEvent(event);
-      defaultEvent = new emeLogger.EmeEvent(event);
+      defaultEvent = new emeLogger.EmeEvent('TestEvent', event);
     });
 
     it('constructs an event message object', function() {
       var result = emeLogger.getMessagePassableObject(defaultEvent);
       expect(result.title).toEqual('TestEvent');
       expect(result.names).toEqual(
-          ['event', 'timeStamp', 'target', 'formattedMessage']);
+          ['event', 'timeStamp', 'target']);
       expect(result.values[0]).toEqual(
           {title: 'Event', names: ['isTrusted'], values: [false]});
       // Value 1 will be the string timeStamp
