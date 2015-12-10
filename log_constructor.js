@@ -21,21 +21,21 @@ var emeLogConstructor = {};
 var loggingWindow;
 
 
-/*
+/**
  * The writer used to write to the log file.
  * @private {FileWriter}
  */
 emeLogConstructor.logFileWriter_;
 
 
-/*
+/**
  * The URL of the log file.
  * @private {string}
  */
 emeLogConstructor.logFileUrl_ = '';
 
 
-/*
+/**
  * The promise that manages writes to the log file.
  * @private {Promise}
  */
@@ -43,79 +43,148 @@ emeLogConstructor.p_ = Promise.resolve();
 
 
 /**
- * Appends a log item to the current logging frame.
- * @param {!emeLogConstructor.LogItemData} data The data to log.
- */
-emeLogConstructor.appendLogItem = function(data) {
-  var dom_item = document.createElement('li');
-  dom_item.innerHTML = emeLogConstructor.buildHTMLLogItem(data);
-  loggingWindow.document.querySelector('#eme-log').appendChild(dom_item);
-};
-
-
-/**
  * @typedef {{
  *   title: string,
  *   names: !Array.<string>,
- *   values: !Array.<string|Object>
+ *   values: !Array.<*>
  * }}
  */
 emeLogConstructor.LogItemData;
 
 
 /**
- * Builds an HTML log item.
- * @param {!emeLogConstructor.LogItemData} data The data to log.
- * @return {string} An HTML representaion of a log item for the given data.
+ * @typedef {{
+ *   title: string,
+ *   logData: string
+ * }}
  */
-emeLogConstructor.buildHTMLLogItem = function(data) {
-  var item = '<h3 style="color: blue">' + data.title + '</h3>';
+emeLogConstructor.FormattedLogItem;
+
+
+/**
+ * Builds a formatted representation of some log data.
+ * @param {!emeLogConstructor.LogItemData} data
+ * @return {!emeLogConstructor.FormattedLogItem}
+ */
+emeLogConstructor.buildFormattedLogItem = function(data) {
+  var logItem = {'title' : data.title,
+                 'logData' : emeLogConstructor.buildDataPairs(data, 0)};
+  return logItem;
+};
+
+
+/**
+ * Builds a log string from pairs of data.
+ * @param {!emeLogConstructor.LogItemData} data
+ * @param {number} indent Current indentation
+ * @return {string} A formatted string.
+ */
+emeLogConstructor.buildDataPairs = function(data, indent) {
+  var indentString = emeLogConstructor.getIndentString(++indent);
+  var item = '';
   for (var i = 0; i < data.names.length; ++i) {
     var name = data.names[i];
-    var value = data.values[i];
-    if (typeof(value) == 'object') {
-      value = JSON.stringify(value, null, 4);
-    }
-    if (typeof(value) == 'string') {
-      value = emeLogConstructor.convertTextToHtml(value);
-    }
-    item += name + ': ' + value + '<br>';
+    var value = emeLogConstructor.buildObjectItem(data.values[i], indent);
+    item += i ? '\n' : '';
+    item += indentString + name + ':  ' + value;
   }
   return item;
 };
 
 
 /**
- * Builds a text log item.
- * @param {!emeLogConstructor.LogItemData} data The data to log.
- * @return {string} An text representaion of a log item for the given data.
+ * Builds a formatted string from a data object.
+ * @param {undefined|number|string|boolean|emeLogConstructor.LogItemData} data
+ *    The data to format.
+ * @param {number} indent Current indentation.
+ * @return {string} A formatted string.
  */
-emeLogConstructor.buildTextLogItem = function(data) {
-  var item = data.title + '\n';
-  for (var i = 0; i < data.names.length; ++i) {
-    var name = data.names[i];
-    var value = data.values[i];
-    if (typeof(value) == 'object') {
-      value = JSON.stringify(value, null, 4);
+emeLogConstructor.buildObjectItem = function(data, indent) {
+  var getIndentString = emeLogConstructor.getIndentString;
+
+  if (typeof(data) == 'number' || typeof(data) == 'boolean') {
+    return data.toString();
+  } else if (typeof(data) == 'string') {
+    return data;
+  } else if (typeof(data) == 'object') {
+    if (!data) return 'null';
+    if (data.names.length == 0) return data.title + '{}';
+
+    indent++;
+    var convertedData = '';
+    switch (data.title) {
+      case 'Array':
+        // Print an array. The array could contain objects, strings or numbers.
+        convertedData += '[';
+        for (var i = 0; i < data.values.length - 1; ++i) {
+          var value = emeLogConstructor.buildObjectItem(data.values[i], indent);
+          convertedData += value + ', ';
+        }
+        if (data.values.length) {
+          convertedData += emeLogConstructor.buildObjectItem(
+              data.values[data.values.length - 1], indent);
+        }
+        convertedData += ']';
+        break;
+      case 'Uint8Array':
+        // data.values contains the Uint8Array. This is an array of 8-bit
+        // unsigned integers.
+        while (data.values.length > 0) {
+          convertedData +=
+              '\n' + getIndentString(indent) + data.values.splice(0, 20);
+        }
+        break;
+      case 'Object':
+        // Print name value pairs without title
+        convertedData +=
+            '\n' + emeLogConstructor.buildDataPairs(data, --indent);
+        break;
+      default:
+        // Standard Object printing, with object title
+        var indentString = getIndentString(indent);
+        convertedData = '\n' + indentString + data.title + ' {\n';
+        convertedData += emeLogConstructor.buildDataPairs(data, indent);
+        convertedData += '\n' + indentString + '}';
     }
-    item += name + ': ' + value + '\n';
+    return convertedData;
+  } else {
+    return 'undefined';
   }
-  item += '\n';
-  return item;
 };
 
+
 /**
- * Converts text to HTML, replacing line breaks and spaces.
- * @param {string} text The text to convert to HTML.
- * @return {string} The HTML representation of the text.
+ * Builds an HTML log item and appends to the current logging frame.
+ * @param {!emeLogConstructor.FormattedLogItem} data The formatted data to log.
  */
-emeLogConstructor.convertTextToHtml = function(text) {
-  if (!text) {
-    return '';
-  }
-  return text.replace(/\n/gm, '<br>')
-             .replace(/\s/gm, '&nbsp')
-             .replace(/\t/gm, '&nbsp&nbsp&nbsp&nbsp');
+emeLogConstructor.appendHtmlLogItem = function(data) {
+  var heading = document.createElement('h3');
+  heading.style.color = 'blue';
+  heading.textContent = data.title;
+  var pre = document.createElement('pre');
+  pre.textContent = data.logData;
+
+  var li = document.createElement('li');
+  li.appendChild(heading);
+  li.appendChild(pre);
+  loggingWindow.document.querySelector('#eme-log').appendChild(li);
+};
+
+
+/**
+ * @private {number} The number of spaces in a tab.
+ * @const
+ */
+emeLogConstructor.NUM_SPACES_ = 4;
+
+
+/**
+ * Returns a string of spaces, corresponding to a number of tabs.
+ * @param {number} number The number of tabs to create.
+ * @return {string} A string of spaces.
+ */
+emeLogConstructor.getIndentString = function(number) {
+  return new Array(number * emeLogConstructor.NUM_SPACES_ + 1).join(' ');
 };
 
 
@@ -160,8 +229,10 @@ emeLogConstructor.getLogFileUrl = function() {
 if (chrome.runtime) {
   chrome.runtime.onMessage.addListener(
       function(request, sender, sendResponse) {
+        var formattedData =
+          emeLogConstructor.buildFormattedLogItem(request.data.data);
         if (loggingWindow) {
-          emeLogConstructor.appendLogItem(request.data.data);
+          emeLogConstructor.appendHtmlLogItem(formattedData);
         }
         if (!emeLogConstructor.logFileWriter_) {
           return;
@@ -171,14 +242,16 @@ if (chrome.runtime) {
             // Alias.
             var fileWriter = emeLogConstructor.logFileWriter_;
 
-            var item = emeLogConstructor.buildTextLogItem(request.data.data);
-            var logItem = new Blob([item], {type: 'text/plain'});
+            var textItem =
+                formattedData.title + '\n' + formattedData.logData + '\n\n';
+            var logItem = new Blob([textItem], {type: 'text/plain'});
             fileWriter.write(logItem);
 
             fileWriter.onwriteend = ok;
             fileWriter.onerror = fail;
           });
-        });
+        // TODO (natalieharris) Notify user of error in log file.
+        }).catch(function() {});
       });
 }
 

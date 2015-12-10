@@ -34,39 +34,92 @@ describe('emeLogConstructor', function() {
     expect(emeLogConstructor.isWindowOpen()).toBe(false);
   });
 
-  it('builds an HTML log item', function() {
+  it('builds a formatted log item', function() {
+    var data = {
+        title: 'Test Data',
+        names: ['Name 1'],
+        values: ['Value 1']
+    };
+    var expectedString = '    Name 1:  Value 1';
+    var formattedItem = emeLogConstructor.buildFormattedLogItem(data);
+    expect(formattedItem.title).toEqual(data.title);
+    expect(formattedItem.logData).toEqual(expectedString);
+  });
+
+  it('builds data pairs', function() {
     var data = {
         title: 'Test Data',
         names: ['Name 1', 'Name 2'],
-        values: [{1: 2, 3: 4}, 'Value 2']
+        values: ['Value 1', 'Value 2']
     };
-    var expectedHtml = '<h3 style="color: blue">Test Data</h3>' +
-                       'Name 1: {<br>' +
-                       '&nbsp&nbsp&nbsp&nbsp"1":&nbsp2,<br>' +
-                       '&nbsp&nbsp&nbsp&nbsp"3":&nbsp4<br>' +
-                       '}<br>' +
-                       'Name 2: Value&nbsp2<br>';
-    expect(emeLogConstructor.buildHTMLLogItem(data)).toEqual(expectedHtml);
+    var expectedText = '    Name 1:  Value 1\n' +
+                       '    Name 2:  Value 2';
+    expect(emeLogConstructor.buildDataPairs(data, 0)).toEqual(expectedText);
   });
 
-  it('builds a text log item', function() {
+  it('builds a formatted string from a undefined value', function() {
+    var result = emeLogConstructor.buildObjectItem(undefined, 0);
+    expect(result).toEqual('undefined');
+  });
+
+  it('builds a formatted string from a number', function() {
+    var result = emeLogConstructor.buildObjectItem(12345, 0);
+    expect(result).toEqual('12345');
+  });
+
+  it('builds a formatted string from a boolean', function() {
+    var result = emeLogConstructor.buildObjectItem(true, 0);
+    expect(result).toEqual('true');
+  });
+
+  it('builds a formatted string from null', function() {
+    var result = emeLogConstructor.buildObjectItem(null, 0);
+    expect(result).toEqual('null');
+  });
+
+  it('builds a formatted string from an array', function() {
     var data = {
-        title: 'Test Data',
-        names: ['Name 1', 'Name 2'],
-        values: [{1: 2, 3: 4}, 'Value 2']
+        title: 'Array',
+        names: ['0', '1', '2'],
+        values: ['Value 0', 'Value 1', 'Value 2']
     };
-    var expectedText = 'Test Data\n' +
-                       'Name 1: {\n' +
-                       '    "1": 2,\n' +
-                       '    "3": 4\n' +
-                       '}\n' +
-                       'Name 2: Value 2\n\n';
-    expect(emeLogConstructor.buildTextLogItem(data)).toEqual(expectedText);
+    var expectedText = '[Value 0, Value 1, Value 2]';
+    var result = emeLogConstructor.buildObjectItem(data, 0);
+    expect(result).toEqual(expectedText);
   });
 
-  it('converts text to html', function() {
-    var text = 'Testing text conversion';
-    var expectedHtml = 'Testing&nbsptext&nbspconversion';
-    expect(emeLogConstructor.convertTextToHtml(text)).toEqual(expectedHtml);
+   it('builds a formatted string from a Uint8Array', function() {
+    var data = {
+        title: 'Uint8Array',
+        names: ['0', '1', '2'],
+        values: [12, 34, 12, 65, 34, 634, 78, 324, 54, 23, 53]
+    };
+    var expectedText = '\n    12,34,12,65,34,634,78,324,54,23,53';
+    var result = emeLogConstructor.buildObjectItem(data, 0);
+    expect(result).toEqual(expectedText);
+  });
+
+  it('builds a formatted string from an Object', function() {
+    var data = {
+        title: 'Object',
+        names: ['persistantStateRequired'],
+        values: ['true']
+    };
+    var expectedText = '\n    persistantStateRequired:  true';
+    var result = emeLogConstructor.buildObjectItem(data, 0);
+    expect(result).toEqual(expectedText);
+  });
+
+  it('builds a formatted string from an Object with a type', function() {
+    var data = {
+        title: 'MediaKey',
+        names: ['keySystem'],
+        values: ['test.com']
+    };
+    var expectedText = '\n    MediaKey {\n' +
+                       '        keySystem:  test.com\n' +
+                       '    }';
+    var result = emeLogConstructor.buildObjectItem(data, 0);
+    expect(result).toEqual(expectedText);
   });
 });
