@@ -102,6 +102,8 @@ EmeListeners.prototype.addListenersToMediaKeySystemAccess_ =
   if (mediaKeySystemAccess.listenersAdded_) {
     return;
   }
+  mediaKeySystemAccess.originalGetConfiguration =
+      mediaKeySystemAccess.getConfiguration;
   mediaKeySystemAccess.getConfiguration = EmeListeners.extendEmeMethod(
       mediaKeySystemAccess,
       mediaKeySystemAccess.getConfiguration,

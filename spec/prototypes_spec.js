@@ -34,9 +34,7 @@ describe('emeLogger', function() {
           'target',
           'returned']);
       expect(result.values[0]).toEqual(
-          {title: 'HTMLVideoElement',
-          names: ['id', 'classes'],
-          values: ['', '']});
+          {title: 'HTMLVideoElement', names: [], values: []});
       expect(result.values[1]).toEqual(
           {title: 'Object',
           names: ['resultName', 'resultValue'],
@@ -49,8 +47,8 @@ describe('emeLogger', function() {
 
     beforeEach(function() {
       var event = new Event('Test');
-      document.dispatchEvent(event);
-      defaultEvent = new emeLogger.EmeEvent('TestEvent', event);
+      var video = document.createElement('video');
+      defaultEvent = new emeLogger.EmeEvent('TestEvent', event, video);
     });
 
     it('constructs an event message object', function() {
@@ -62,9 +60,8 @@ describe('emeLogger', function() {
           {title: 'Event', names: ['isTrusted'], values: [false]});
       // Value 1 will be the string timeStamp
       expect(result.values[1]).toEqual(jasmine.any(String));
-      expect(result.values[2]).toEqual(
-          {title: 'HTMLDocument', names: ['id'], values: [undefined]});
-      expect(result.values[3]).toEqual(undefined);
+      // The documents title
+      expect(result.values[2].title).toEqual('HTMLVideoElement');
     });
   });
 

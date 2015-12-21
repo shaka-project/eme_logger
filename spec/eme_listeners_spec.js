@@ -370,8 +370,11 @@ describe('emeListeners', function() {
   it('logs call using given proto', function() {
     spyOn(console, 'log');
     logCallSpy.and.callThrough();
-    var expected = new emeLogger.SetMediaKeysCall(['fakeMediaKeys']);
-    EmeListeners.logCall(emeLogger.SetMediaKeysCall, ['fakeMediaKeys']);
+    var mediaElement = document.createElement('media');
+    var expected = new emeLogger.SetMediaKeysCall(
+        ['fakeMediaKeys'], mediaElement, null);
+    EmeListeners.logCall(
+        emeLogger.SetMediaKeysCall, ['fakeMediaKeys'], null, mediaElement);
     expect(console.log).toHaveBeenCalledWith(expected);
   });
 
