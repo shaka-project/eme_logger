@@ -166,7 +166,7 @@ emeLogger.MediaKeySystemAccess = function(mksa) {
   this.title = 'MediaKeySystemAccess';
   this.keySystem = mksa.keySystem;
   this.configuration = mksa.listenersAdded_ ?
-      mksa.originalConfiguration() : mksa.getConfiguration();
+      mksa.originalGetConfiguration() : mksa.getConfiguration();
 };
 
 
@@ -211,6 +211,7 @@ emeLogger.MessageEvent = function(e) {
   var mks = new emeLogger.MediaKeySession(e.target);
   emeLogger.EmeEvent.apply(this, ['MessageEvent', e, mks]);
   // If a formatter extension is available, message will be formatted.
+  this.message = new Uint8Array(e.message);
   this.formattedMessage = emeLogger.getFormattedMessage(
       'message', e.message, e.keySystem);
 };
@@ -439,7 +440,7 @@ emeLogger.CreateSessionCall.prototype.constructor = emeLogger.CreateSessionCall;
 emeLogger.SetServerCertificateCall = function(args, target, result) {
   emeLogger.EmeMethodCall.apply(
       this, ['SetServerCertificateCall', target, result]);
-  this.serverCertificate = args[0];
+  this.serverCertificate = new Uint8Array(args[0]);
 };
 emeLogger.SetServerCertificateCall.prototype =
     Object.create(emeLogger.EmeMethodCall.prototype);
@@ -460,7 +461,7 @@ emeLogger.GenerateRequestCall = function(args, target, result) {
   var mks = new emeLogger.MediaKeySession(target);
   emeLogger.EmeMethodCall.apply(this, ['GenerateRequestCall', mks, result]);
   this.initDataType = args[0];
-  this.initData = args[1];
+  this.initData = new Uint8Array(args[1]);
 };
 emeLogger.GenerateRequestCall.prototype =
     Object.create(emeLogger.EmeMethodCall.prototype);
@@ -515,7 +516,7 @@ emeLogger.LoadCall.prototype.constructor = emeLogger.LoadCall;
 emeLogger.UpdateCall = function(args, target, result) {
   var mks = new emeLogger.MediaKeySession(target);
   emeLogger.EmeMethodCall.apply(this, ['UpdateCall', mks, result]);
-  this.response = args[0];
+  this.response = new Uint8Array(args[0]);
   // If a formatter extension is available, response will be formatted.
   this.formattedMessage = emeLogger.getFormattedMessage(
       'UpdateCall', this.response, target.keySystem_);
