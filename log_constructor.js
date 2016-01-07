@@ -45,6 +45,7 @@ emeLogConstructor.p_ = Promise.resolve();
 /**
  * @typedef {{
  *   title: string,
+ *   timestamp: string,
  *   names: !Array.<string>,
  *   values: !Array.<*>
  * }}
@@ -55,6 +56,7 @@ emeLogConstructor.LogItemData;
 /**
  * @typedef {{
  *   title: string,
+ *   timestamp: string,
  *   logData: string
  * }}
  */
@@ -68,6 +70,7 @@ emeLogConstructor.FormattedLogItem;
  */
 emeLogConstructor.buildFormattedLogItem = function(data) {
   var logItem = {'title' : data.title,
+                 'timestamp' : data.timestamp,
                  'logData' : emeLogConstructor.buildDataPairs(data, 0)};
   return logItem;
 };
@@ -159,8 +162,12 @@ emeLogConstructor.buildObjectItem = function(data, indent) {
  */
 emeLogConstructor.appendHtmlLogItem = function(data) {
   var heading = document.createElement('h3');
-  heading.style.color = 'blue';
-  heading.textContent = data.title;
+  var span = document.createElement('span');
+  span.style.color = 'blue';
+  span.textContent = data.title;
+  var time = document.createTextNode('  ' + data.timestamp);
+  heading.appendChild(span);
+  heading.appendChild(time);
   var pre = document.createElement('pre');
   pre.textContent = data.logData;
 
@@ -243,7 +250,8 @@ if (chrome.runtime) {
             var fileWriter = emeLogConstructor.logFileWriter_;
 
             var textItem =
-                formattedData.title + '\n' + formattedData.logData + '\n\n';
+                formattedData.title + '  ' + formattedData.timestamp + '\n' +
+                formattedData.logData + '\n\n';
             var logItem = new Blob([textItem], {type: 'text/plain'});
             fileWriter.write(logItem);
 

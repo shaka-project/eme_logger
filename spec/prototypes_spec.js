@@ -54,14 +54,11 @@ describe('emeLogger', function() {
     it('constructs an event message object', function() {
       var result = emeLogger.getMessagePassableObject(defaultEvent);
       expect(result.title).toEqual('TestEvent');
-      expect(result.names).toEqual(
-          ['event', 'timeStamp', 'target']);
+      expect(result.names).toEqual(['event', 'target']);
       expect(result.values[0]).toEqual(
           {title: 'Event', names: ['isTrusted'], values: [false]});
-      // Value 1 will be the string timeStamp
-      expect(result.values[1]).toEqual(jasmine.any(String));
       // The documents title
-      expect(result.values[2].title).toEqual('HTMLVideoElement');
+      expect(result.values[1].title).toEqual('HTMLVideoElement');
     });
   });
 
@@ -78,8 +75,9 @@ describe('emeLogger', function() {
       expect(result.title).toEqual('Promise Result Description');
       expect(result.names).toEqual(['status', 'result']);
       expect(result.values[0]).toEqual('resolved');
-      expect(result.values[1]).toEqual(
-          {title: 'Object', names: ['result'], values: ['Result Object']});
+      expect(result.values[1].title).toEqual('Object');
+      expect(result.values[1].names).toEqual(['result']);
+      expect(result.values[1].values).toEqual(['Result Object']);
     });
   });
 });

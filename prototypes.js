@@ -22,6 +22,7 @@ var emeLogger = {};
 /**
  * @typedef {{
  *   title: string,
+ *   timestamp: string,
  *   names: !Array.<string>,
  *   values: !Array.<*>
  * }}
@@ -37,6 +38,7 @@ emeLogger.LogItemData;
  * @constructor
  */
 emeLogger.EmeMethodCall = function(title, target, result) {
+  this.timestamp = emeLogger.timeToString_(new Date().getTime());
   this.title = title;
   this.target = target;
   this.returned = result;
@@ -53,8 +55,39 @@ emeLogger.EmeMethodCall = function(title, target, result) {
 emeLogger.EmeEvent = function(title, e, target) {
   this.title = title;
   this.event = e;
-  this.timeStamp = new Date(e.timeStamp).toString();
+  this.timestamp = emeLogger.timeToString_(e.timeStamp);
   this.target = target;
+};
+
+
+/**
+ * Constructs a time string in the format hh:mm:ss:mil.
+ * @param {number} time The time in milliseconds.
+ * @return {string} A human readable string respresenting the time.
+ * @private
+ */
+emeLogger.timeToString_ = function(time) {
+  var date = new Date(time);
+  var hours = emeLogger.padNumber_(date.getHours().toString());
+  var minutes = emeLogger.padNumber_(date.getMinutes().toString());
+  var seconds = emeLogger.padNumber_(date.getSeconds().toString());
+  var milli = emeLogger.padNumber_(date.getMilliseconds().toString());
+  return hours.concat(':', minutes, ':', seconds, ':', milli);
+};
+
+
+/**
+ * Pads a number with leading zeros.
+ * @param {string} num A string representing the number.
+ * @param {number} length The desired length of the string.
+ * @return {string} A string padded with zeros to the desired length.
+ * @private
+ */
+emeLogger.padNumber_ = function(num, length) {
+  while (num.length < length) {
+    num = '0' + num;
+  }
+  return num;
 };
 
 
@@ -109,6 +142,7 @@ emeLogger.getFormattedMessage = function(name, data, keySystem) {
  * @constructor
  */
 emeLogger.PromiseResult = function(title, status, result) {
+  this.timestamp = emeLogger.timeToString_(new Date().getTime());
   this.title = title;
   this.status = status;
   if (result) {
@@ -129,7 +163,7 @@ emeLogger.getMessagePassableObject = function(obj) {
   var names = [];
   var values = [];
   for (var prop in obj) {
-    if (prop == 'title') continue;
+    if (prop == 'title' || prop == 'timestamp') continue;
     // We only care about direct properties of the object. Calling
     // hasOwnProperty will stop from checking down the object's prototype chain.
     if (obj.hasOwnProperty(prop)) {
@@ -150,6 +184,9 @@ emeLogger.getMessagePassableObject = function(obj) {
     names: names,
     values: values
   };
+  if (obj.timestamp) {
+    data.timestamp = obj.timestamp;
+  }
   return data;
 };
 
