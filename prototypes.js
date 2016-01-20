@@ -249,6 +249,7 @@ emeLogger.MessageEvent = function(e) {
   emeLogger.EmeEvent.apply(this, ['MessageEvent', e, mks]);
   // If a formatter extension is available, message will be formatted.
   this.message = new Uint8Array(e.message);
+  this.messageType = e.messageType;
   this.formattedMessage = emeLogger.getFormattedMessage(
       'message', e.message, e.keySystem);
 };
@@ -348,6 +349,8 @@ emeLogger.KeyErrorEvent.prototype.constructor = emeLogger.KeyErrorEvent;
 emeLogger.EncryptedEvent = function(e) {
   var element = new emeLogger.HTMLMediaElement(e.target);
   emeLogger.EmeEvent.apply(this, ['EncryptedEvent', e, element]);
+  this.initData = new Uint8Array(e.initData);
+  this.initDataType = e.initDataType;
 };
 emeLogger.EncryptedEvent.prototype =
     Object.create(emeLogger.EmeEvent.prototype);
@@ -379,6 +382,8 @@ emeLogger.PlayEvent.prototype.constructor = emeLogger.PlayEvent;
 emeLogger.ErrorEvent = function(e) {
   var element = new emeLogger.HTMLMediaElement(e.target);
   emeLogger.EmeEvent.apply(this, ['ErrorEvent', e, element]);
+  this.errorType = e.target.error;
+  this.errorCode = this.errorType.code;
 };
 emeLogger.ErrorEvent.prototype = Object.create(emeLogger.EmeEvent.prototype);
 /** @constructor */
