@@ -181,12 +181,14 @@ emePrototypes.TargetElement = function(element) {
  * @param {string} description A description of the Promise.
  * @param {string} status Status of the Promise.
  * @param {Object} result The result of the Promise.
+ * @param {Object} args The arguments that were passed.
  * @constructor
  */
-emePrototypes.PromiseResult = function(description, status, result) {
+emePrototypes.PromiseResult = function(description, status, result, args) {
   this.description = description;
   this.status = status;
   this.result = result;
+  this.args = args;
 };
 
 
@@ -198,8 +200,9 @@ emePrototypes.PromiseResult = function(description, status, result) {
 emePrototypes.PromiseResult.prototype.getMessageObject = function() {
   var data = {
     title: this.description,
-    names: ['status', 'result'],
-    values: [this.status, emePrototypes.getMessagePassableObject(this.result)]
+    names: ['status', 'result', 'args'],
+    values: [this.status, emePrototypes.getMessagePassableObject(this.result),
+        emePrototypes.getMessagePassableObject(this.args)]
   };
   return data;
 };
