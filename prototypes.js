@@ -181,7 +181,7 @@ emePrototypes.TargetElement = function(element) {
  * @param {string} description A description of the Promise.
  * @param {string} status Status of the Promise.
  * @param {Object} result The result of the Promise.
- * @param {Object} args The arguments that were passed.
+ * @param {Array} args The arguments that were passed.
  * @constructor
  */
 emePrototypes.PromiseResult = function(description, status, result, args) {

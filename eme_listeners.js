@@ -412,7 +412,7 @@ EmeListeners.logEvent = function(event) {
  * @param {string} description A short description of this Promise.
  * @param {string} status The status of this Promise.
  * @param {Object} result The result of this Promise.
- * @param {Object} args The arguments that were passed.
+ * @param {Array} args The arguments that were passed.
  */
 EmeListeners.logPromiseResult = function(description, status, result, args) {
   var logOutput = new emePrototypes.PromiseResult(description, status, result, args);
