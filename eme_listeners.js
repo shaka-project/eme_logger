@@ -359,10 +359,10 @@ EmeListeners.extendEmeMethod = function(
     if (result && result.constructor.name == 'Promise') {
       var description = title + ' Promise Result';
       result = result.then(function(resultObject) {
-        EmeListeners.logPromiseResult(description, 'resolved', resultObject);
+        EmeListeners.logPromiseResult(description, 'resolved', resultObject, args);
         return Promise.resolve(resultObject);
       }).catch(function(error) {
-        EmeListeners.logPromiseResult(description, 'rejected', error);
+        EmeListeners.logPromiseResult(description, 'rejected', error, args);
         return Promise.reject(error);
       });
     }
@@ -412,9 +412,10 @@ EmeListeners.logEvent = function(event) {
  * @param {string} description A short description of this Promise.
  * @param {string} status The status of this Promise.
  * @param {Object} result The result of this Promise.
+ * @param {Array} args The arguments that were passed.
  */
-EmeListeners.logPromiseResult = function(description, status, result) {
-  var logOutput = new emePrototypes.PromiseResult(description, status, result);
+EmeListeners.logPromiseResult = function(description, status, result, args) {
+  var logOutput = new emePrototypes.PromiseResult(description, status, result, args);
   window.postMessage({data:
                       JSON.parse(JSON.stringify(logOutput.getMessageObject())),
                       type: 'emeLogMessage'}, '*');
