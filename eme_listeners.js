@@ -349,10 +349,10 @@ EmeListeners.extendEmeMethod = function(element, originalFn, constructor) {
     if (result && result.constructor.name == 'Promise') {
       var description = logObject.title + ' Promise Result';
       result = result.then(function(resultObject) {
-        EmeListeners.logPromiseResult(description, 'resolved', resultObject);
+        EmeListeners.logPromiseResult(description, 'resolved', resultObject, args);
         return Promise.resolve(resultObject);
       }).catch(function(error) {
-        EmeListeners.logPromiseResult(description, 'rejected', error);
+        EmeListeners.logPromiseResult(description, 'rejected', error, args);
         return Promise.reject(error);
       });
     }
@@ -396,10 +396,11 @@ EmeListeners.logEvent = function(constructor, event) {
  * @param {string} title A short description of this Promise.
  * @param {string} status The status of this Promise.
  * @param {Object} result The result of this Promise.
+ * @param {Array} args The arguments that were passed.
  * @return {!emeLogger.PromiseResult} The data that has been logged.
  */
-EmeListeners.logPromiseResult = function(title, status, result) {
-  var logObject = new emeLogger.PromiseResult(title, status, result);
+EmeListeners.logPromiseResult = function(title, status, result, args) {
+  var logObject = new emeLogger.PromiseResult(title, status, result, args);
   EmeListeners.logAndPostMessage_(logObject);
   return logObject;
 };

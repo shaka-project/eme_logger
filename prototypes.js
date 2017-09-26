@@ -139,12 +139,14 @@ emeLogger.getFormattedMessage = function(name, data, keySystem) {
  * @param {string} title The title used to describe this Promise.
  * @param {string} status Status of the Promise.
  * @param {Object} result The result of the Promise.
+ * @param {Array} args The arguments that were passed.
  * @constructor
  */
-emeLogger.PromiseResult = function(title, status, result) {
+emeLogger.PromiseResult = function(title, status, result, args) {
   this.timestamp = emeLogger.timeToString_(new Date().getTime());
   this.title = title;
   this.status = status;
+  this.args = args;
   if (result) {
     this.result = result.constructor.name == 'MediaKeySystemAccess' ?
       new emeLogger.MediaKeySystemAccess(result) : result;
