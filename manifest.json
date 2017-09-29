@@ -1,7 +1,7 @@
 {
   "name": "EME Call and Event Logger",
   "short_name": "EME Logger",
-  "version": "2.0",
+  "version": "2.1",
   "manifest_version": 2,
   "description": "Logs all Encrypted Media Extensions (EME) method calls and events.",
   "content_scripts": [{
