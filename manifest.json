@@ -1,11 +1,15 @@
 {
   "name": "EME Call and Event Logger",
   "short_name": "EME Logger",
-  "version": "2.1",
+  "version": "2.2.0",
   "manifest_version": 2,
   "description": "Logs all Encrypted Media Extensions (EME) method calls and events.",
   "content_scripts": [{
-    "matches": ["http://*/*", "https://*/*", "file://*"],
+    "matches": [
+      "http://*/*",
+      "https://*/*",
+      "file://*"
+    ],
     "js": ["content_script.js"],
     "all_frames": true,
     "run_at": "document_start"
@@ -25,5 +29,9 @@
     "default_popup": "popup.html"
   },
   "permissions": ["unlimitedStorage"],
-  "web_accessible_resources": [ "mutation-summary.js", "prototypes.js", "eme_listeners.js" ]
+  "web_accessible_resources": [
+    "mutation-summary.js",
+    "prototypes.js",
+    "eme_listeners.js"
+  ]
 }
