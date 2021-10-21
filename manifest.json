@@ -15,11 +15,11 @@
     "run_at": "document_start"
   }],
   "icons": {
-    "22": "EME_logo_22.png",
-    "32": "EME_logo_32.png",
-    "48": "EME_logo_48.png",
-    "96": "EME_logo_96.png",
-    "128": "EME_logo_128.png"
+    "22": "icons/EME_logo_22.png",
+    "32": "icons/EME_logo_32.png",
+    "48": "icons/EME_logo_48.png",
+    "96": "icons/EME_logo_96.png",
+    "128": "icons/EME_logo_128.png"
   },
   "background" : {
     "scripts": ["log_constructor.js"]
