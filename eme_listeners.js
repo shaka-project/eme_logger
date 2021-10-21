@@ -32,12 +32,7 @@ function setUp_() {
  * Manager for EME event and method listeners.
  * @constructor
  */
-function EmeListeners() {
-  this.unprefixedEmeEnabled =
-      Navigator.prototype.requestMediaKeySystemAccess ? true : false;
-  this.prefixedEmeEnabled =
-      HTMLMediaElement.prototype.webkitGenerateKeyRequest ? true : false;
-}
+function EmeListeners() {}
 
 
 /**
@@ -51,17 +46,12 @@ EmeListeners.NUM_MEDIA_ELEMENT_TYPES = 3;
  * Sets up EME listeners for whichever type of EME is enabled.
  */
 EmeListeners.prototype.setUpListeners = function() {
-  if (!this.unprefixedEmeEnabled && !this.prefixedEmeEnabled) {
+  if (!navigator.requestMediaKeySystemAccess) {
     console.log('EME not available.');
     return;
   }
-  if (this.unprefixedEmeEnabled) {
-    console.log('Unprefixed EME is enabled.');
-    this.addListenersToNavigator_();
-  }
-  if (this.prefixedEmeEnabled) {
-    console.log('Prefixed EME is enabled.');
-  }
+
+  this.addListenersToNavigator_();
   this.addListenersToAllEmeElements_();
 };
 
@@ -261,20 +251,6 @@ EmeListeners.prototype.addEmeEventListeners_ = function(element) {
   if (element.eventListenersAdded_) {
     return;
   }
-  if (this.prefixedEmeEnabled) {
-    element.addEventListener('webkitneedkey',
-        EmeListeners.logEvent.bind(null, emeLogger.NeedKeyEvent));
-
-    element.addEventListener('webkitkeymessage',
-        EmeListeners.logEvent.bind(null, emeLogger.KeyMessageEvent));
-
-    element.addEventListener('webkitkeyadded',
-        EmeListeners.logEvent.bind(null, emeLogger.KeyAddedEvent));
-
-    element.addEventListener('webkitkeyerror',
-        EmeListeners.logEvent.bind(null, emeLogger.KeyErrorEvent));
-  }
-
   element.addEventListener('encrypted',
       EmeListeners.logEvent.bind(null, emeLogger.EncryptedEvent));
 
@@ -302,31 +278,8 @@ EmeListeners.prototype.addEmeMethodListeners_ = function(element) {
   element.play = EmeListeners.extendEmeMethod(
       element, element.play, emeLogger.PlayCall);
 
-  if (this.prefixedEmeEnabled) {
-    element.canPlayType = EmeListeners.extendEmeMethod(
-        element, element.canPlayType, emeLogger.CanPlayTypeCall);
-
-    element.webkitGenerateKeyRequest = EmeListeners.extendEmeMethod(
-        element,
-        element.webkitGenerateKeyRequest,
-        emeLogger.GenerateKeyRequestCall);
-
-    element.webkitAddKey = EmeListeners.extendEmeMethod(
-        element,
-        element.webkitAddKey,
-        emeLogger.AddKeyCall);
-
-    element.webkitCancelKeyRequest = EmeListeners.extendEmeMethod(
-        element,
-        element.webkitCancelKeyRequest,
-        emeLogger.CancelKeyRequestCall);
-
-  }
-
-  if (this.unprefixedEmeEnabled) {
-    element.setMediaKeys = EmeListeners.extendEmeMethod(
-        element, element.setMediaKeys, emeLogger.SetMediaKeysCall);
-  }
+  element.setMediaKeys = EmeListeners.extendEmeMethod(
+      element, element.setMediaKeys, emeLogger.SetMediaKeysCall);
 
   element.methodListenersAdded_ = true;
 };

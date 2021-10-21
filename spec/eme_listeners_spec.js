@@ -41,10 +41,6 @@ describe('emeListeners', function() {
   };
 
   const events = {
-      webkitNeedKeyEvent: new Event('webkitneedkey'),
-      webkitKeyMessageEvent: new Event('webkitkeymessage'),
-      webkitKeyAddedEvent: new Event('webkitkeyadded'),
-      webkitKeyErrorEvent: new Event('webkitkeyerror'),
       encryptedEvent: new Event('encrypted'),
       playEvent: new Event('play'),
       errorEvent: new Event('error'),
@@ -249,95 +245,10 @@ describe('emeListeners', function() {
     });
   });
 
-  describe('logs prefixed EME', function() {
-    var mockHtmlMedia;
-
-    beforeEach(function() {
-      listener.prefixedEmeEnabled = true;
-      listener.unprefixedEmeEnabled = false;
-      mockHtmlMedia = {
-        canPlayType: mockFn,
-        webkitGenerateKeyRequest: mockFn,
-        webkitAddKey: mockFn,
-        webkitCancelKeyRequest: mockFn,
-        play: mockFn
-      };
-      listener.addEmeMethodListeners_(mockHtmlMedia);
-    });
-
-
-    it('canPlayType calls', function(done) {
-      logsCall(
-        mockHtmlMedia.canPlayType,
-        emeLogger.CanPlayTypeCall,
-        ['fakeType', 'fakeKeySystem'],
-        mockHtmlMedia,
-        done);
-    });
-
-    it('generateKeyRequest calls', function(done) {
-      logsCall(
-        mockHtmlMedia.webkitGenerateKeyRequest,
-        emeLogger.GenerateKeyRequestCall,
-        ['fakeKeySystem', 'fakeInitData'],
-        mockHtmlMedia,
-        done);
-    });
-
-    it('addKey calls', function(done) {
-      logsCall(
-        mockHtmlMedia.webkitAddKey,
-        emeLogger.AddKeyCall,
-        ['fakeKeySystem', 'fakeKey', 'fakeInitData', 'fakeSessionId'],
-        mockHtmlMedia,
-        done,
-        'fakeKey',
-        'fakeKeySystem');
-    });
-
-    it('cancelKeyRequest calls', function(done) {
-      logsCall(
-        mockHtmlMedia.webkitCancelKeyRequest,
-        emeLogger.CancelKeyRequestCall,
-        ['fakeKeySystem', 'fakeSessionId'],
-        mockHtmlMedia,
-        done);
-    });
-
-    it('play calls', function(done) {
-      logsCall(
-        mockHtmlMedia.play,
-        emeLogger.PlayCall,
-        [],
-        mockHtmlMedia,
-        done);
-    });
-
-    it('events', function() {
-      spyOn(console, 'error');
-      mockHtmlMedia = document.createElement('media');
-      listener.addEmeEventListeners_(mockHtmlMedia);
-      for (var e in events) {
-        mockHtmlMedia.dispatchEvent(events[e]);
-      }
-      expect(EmeListeners.logEvent.calls.count()).toEqual(7);
-      expectLogEvent(emeLogger.NeedKeyEvent, 'webkitNeedKeyEvent');
-      expectLogEvent(emeLogger.KeyMessageEvent, 'webkitKeyMessageEvent');
-      expectLogEvent(emeLogger.KeyAddedEvent, 'webkitKeyAddedEvent');
-      expectLogEvent(emeLogger.KeyErrorEvent, 'webkitKeyErrorEvent');
-      expectLogEvent(emeLogger.PlayEvent, 'playEvent');
-      expectLogEvent(emeLogger.ErrorEvent, 'errorEvent');
-      expectLogEvent(emeLogger.EncryptedEvent, 'encryptedEvent');
-      expect(console.error.calls.count()).toEqual(1);
-    });
-  });
-
   describe('logs unprefixed EME', function() {
     var mockHtmlMedia;
 
     beforeEach(function() {
-      listener.prefixedEmeEnabled = false;
-      listener.unprefixedEmeEnabled = true;
       mockHtmlMedia = {
         setMediaKeys: mockFn,
         play: mockFn

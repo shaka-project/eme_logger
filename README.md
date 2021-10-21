@@ -27,21 +27,11 @@ function SomeSystemFormatter() {
   this.isKeySystemSupported = function (keySystem) {
     return keySystem == "com.example.somesystem";
   }
-
-  // Unprefixed logging methods.
   this.formatUpdateCall = function (response) {
     return "SomeSystemFormatter saw an UpdateCall with: " + response;
   }
   this.formatmessage = function (message) {
     return "SomeSystemFormatter saw a MessageEvent with: " + message;
-  }
-
-  // Prefixed logging methods.
-  this.formatwebkitkeymessage = function (message) {
-    return "SomeSystemFormatter saw a KeyMessageEvent with: " + message;
-  }
-  this.formatAddKeyCall = function (key) {
-    return "SomeSystemFormatter saw an AddKeyCall with: " + key;
   }
 }
 
