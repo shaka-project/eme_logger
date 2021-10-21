@@ -36,13 +36,6 @@ function EmeListeners() {}
 
 
 /**
- * The number of types of HTML Media Elements to track.
- * @const {number}
- */
-EmeListeners.NUM_MEDIA_ELEMENT_TYPES = 3;
-
-
-/**
  * Sets up EME listeners for whichever type of EME is enabled.
  */
 EmeListeners.prototype.setUpListeners = function() {
@@ -196,11 +189,11 @@ EmeListeners.prototype.addListenersToAllEmeElements_ = function() {
     callback: function(summaries) {
       applyListeners(summaries);
     },
-    queries: [{element: 'video'}, {element: 'audio'}, {element: 'media'}]
+    queries: [{element: 'video'}, {element: 'audio'}],
   });
 
   var applyListeners = function(summaries) {
-    for (var i = 0; i < EmeListeners.NUM_MEDIA_ELEMENT_TYPES; i++) {
+    for (var i = 0; i < summaries.length; i++) {
       var elements = summaries[i];
       elements.added.forEach(function(element) {
         this.addListenersToEmeElement_(element, true);
@@ -222,10 +215,6 @@ EmeListeners.prototype.addEmeListenersToInitialMediaElements_ = function() {
   var videoElements = document.getElementsByTagName('video');
   for (var i = 0; i < videoElements.length; ++i) {
     this.addListenersToEmeElement_(videoElements[i], false);
-  }
-  var mediaElements = document.getElementsByTagName('media');
-  for (var i = 0; i < mediaElements.length; ++i) {
-    this.addListenersToEmeElement_(mediaElements[i], false);
   }
 };
 

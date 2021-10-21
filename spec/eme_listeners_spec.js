@@ -233,7 +233,7 @@ describe('emeListeners', function() {
 
     it('events', function() {
       // Needs to be an object that implements the EventTarget interface.
-      mockMediaKeySession = document.createElement('media');
+      mockMediaKeySession = document.createElement('video');
       listener.addListenersToMediaKeySession_(mockMediaKeySession);
       for (var e in events) {
         mockMediaKeySession.dispatchEvent(events[e]);
@@ -277,7 +277,7 @@ describe('emeListeners', function() {
 
     it('events', function() {
       spyOn(console, 'error');
-      mockHtmlMedia = document.createElement('media');
+      mockHtmlMedia = document.createElement('video');
       listener.addEmeEventListeners_(mockHtmlMedia);
       for (var e in events) {
         mockHtmlMedia.dispatchEvent(events[e]);
@@ -293,7 +293,7 @@ describe('emeListeners', function() {
   it('logs call using given proto', function() {
     spyOn(console, 'log');
     logCallSpy.and.callThrough();
-    var mediaElement = document.createElement('media');
+    var mediaElement = document.createElement('video');
     var expected = new emeLogger.SetMediaKeysCall(
         ['fakeMediaKeys'], mediaElement, null);
     EmeListeners.logCall(
