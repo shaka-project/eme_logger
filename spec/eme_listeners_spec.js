@@ -17,6 +17,18 @@
  */
 
 describe('emeListeners', function() {
+  beforeEach(() => {
+    // Set a specific mock time, since some of these objects are timestamped and
+    // compared with other objects that may have been constructed a few
+    // milliseconds later.  This eliminates some test flake.
+    jasmine.clock().install();
+    jasmine.clock().mockDate(new Date(2021, 7, 20));
+  });
+
+  afterAll(() => {
+    jasmine.clock().uninstall();
+  });
+
   var listener, mockFn, async, logCallSpy;
   var expectLogCall = function(proto, args, target, data, keySystem) {
     expect(EmeListeners.logCall).toHaveBeenCalledWith(
