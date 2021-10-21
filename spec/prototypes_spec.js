@@ -73,11 +73,17 @@ describe('emeLogger', function() {
     it('constructs a promise result message object', function() {
       var result = emeLogger.getMessagePassableObject(defaultPromise);
       expect(result.title).toEqual('Promise Result Description');
-      expect(result.names).toEqual(['status', 'result']);
-      expect(result.values[0]).toEqual('resolved');
-      expect(result.values[1].title).toEqual('Object');
-      expect(result.values[1].names).toEqual(['result']);
-      expect(result.values[1].values).toEqual(['Result Object']);
+      // The names and values are the result of iteration, and therefore appear
+      // in no particular order.
+      expect(result.names.slice().sort()).toEqual(['args', 'result', 'status']);
+      const resultMap = {};
+      for (let i = 0; i < result.names.length; ++i) {
+        resultMap[result.names[i]] = result.values[i];
+      }
+      expect(resultMap['status']).toEqual('resolved');
+      expect(resultMap['result'].title).toEqual('Object');
+      expect(resultMap['result'].names).toEqual(['result']);
+      expect(resultMap['result'].values).toEqual(['Result Object']);
     });
   });
 });
