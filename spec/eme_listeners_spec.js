@@ -13,304 +13,401 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * @fileoverview EmeListeners unit tests.
+ * @fileoverview Tests for EME API tracing.
  */
 
-describe('emeListeners', function() {
-  beforeEach(() => {
-    // Set a specific mock time, since some of these objects are timestamped and
-    // compared with other objects that may have been constructed a few
-    // milliseconds later.  This eliminates some test flake.
-    jasmine.clock().install();
-    jasmine.clock().mockDate(new Date(2021, 7, 20));
-  });
-
-  afterAll(() => {
-    jasmine.clock().uninstall();
-  });
-
-  var listener, mockFn, async, logCallSpy;
-  var expectLogCall = function(proto, args, target, data, keySystem) {
-    expect(EmeListeners.logCall).toHaveBeenCalledWith(
-        proto, args, jasmine.any(Object), target);
-  };
-
-  var expectLogEvent = function(proto, eventName) {
-    expect(EmeListeners.logEvent).toHaveBeenCalledWith(
-        proto, events[eventName]);
-  };
-
-  const events = {
-      encryptedEvent: new Event('encrypted'),
-      playEvent: new Event('play'),
-      errorEvent: new Event('error'),
-      messageEvent: new Event('message'),
-      keyStatusesChangeEvent: new Event('keystatuseschange')
-    };
-
+// TODO: Remove done after Jasmine upgrade that offers support for async
+describe('EME tracing', function() {
   beforeEach(function() {
-    listener = new EmeListeners();
-    logCallSpy = spyOn(EmeListeners, 'logCall').and.returnValue({title: ''});
-    spyOn(EmeListeners, 'logEvent');
-    spyOn(EmeListeners, 'logPromiseResult');
-    mockFn = jasmine.createSpy('mockFn').and.returnValue(Promise.resolve({}));
-    async = [];
+    spyOn(EmeListeners, 'logAndPostMessage_').and.callFake((log) => {
+      // Validate that the logs can always be serialized.  We don't care about
+      // the output at this level.
+      try {
+        JSON.stringify(log);
+      } catch (exception) {
+        fail(exception);
+      }
+    });
   });
+
+  const keySystem = 'com.widevine.alpha';
+  const minimalConfigs = [{
+    initDataTypes: ['cenc'],
+    videoCapabilities: [{
+      contentType: 'video/mp4; codecs="avc1.42E01E"',
+    }],
+  }];
+  const initData = new Uint8Array([
+    0x00, 0x00, 0x00, 0x73, 0x70, 0x73, 0x73, 0x68, 0x00, 0x00, 0x00, 0x00,
+    0xed, 0xef, 0x8b, 0xa9, 0x79, 0xd6, 0x4a, 0xce, 0xa3, 0xc8, 0x27, 0xdc,
+    0xd5, 0x1d, 0x21, 0xed, 0x00, 0x00, 0x00, 0x53, 0x08, 0x01, 0x12, 0x10,
+    0x68, 0xac, 0xcc, 0x06, 0xd6, 0xac, 0x53, 0x58, 0x98, 0x88, 0x6c, 0x1e,
+    0x31, 0xe0, 0xbf, 0x39, 0x12, 0x10, 0x3e, 0x07, 0xd4, 0x81, 0x61, 0x7a,
+    0x50, 0x6a, 0x9d, 0x22, 0x6e, 0x72, 0xc7, 0xf5, 0xc9, 0xb7, 0x12, 0x10,
+    0x44, 0x2d, 0x60, 0xd2, 0x0f, 0xad, 0x5d, 0xee, 0xa5, 0xc7, 0x3e, 0x00,
+    0x05, 0xf1, 0xc3, 0x9e, 0x1a, 0x0d, 0x77, 0x69, 0x64, 0x65, 0x76, 0x69,
+    0x6e, 0x65, 0x5f, 0x74, 0x65, 0x73, 0x74, 0x22, 0x08, 0xce, 0xc5, 0xbf,
+    0xf5, 0xdc, 0x40, 0xdd, 0xc9, 0x32, 0x00,
+  ]);
+  // A completely valid mp4 in a data URI (an audio init segment).
+  const tinyMp4 = 'data:audio/mp4;base64,AAAAGGZ0eXBkYXNoAAAAAGlzbzZtcDQxAAAC0W1vb3YAAABsbXZoZAAAAADTjyWa048lmgAAu4ACim4AAAEAAAEAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAACGbWV0YQAAAAAAAAAgaGRscgAAAAAAAAAASUQzMgAAAAAAAAAAAAAAAAAAAFpJRDMyAAAAABXHSUQzBAAAAAAAQlBSSVYAAAA4AABodHRwczovL2dpdGh1Yi5jb20vZ29vZ2xlL2VkYXNoLXBhY2thZ2VyAGZlNjc3NWEtcmVsZWFzZQAAADhtdmV4AAAAEG1laGQAAAAAAopuAAAAACB0cmV4AAAAAAAAAAEAAAABAAAEAAAAAAAAAAAAAAABn3RyYWsAAABcdGtoZAAAAAPTjyWa048lmgAAAAEAAAAAAopuAAAAAAAAAAAAAAAAAAEAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAATttZGlhAAAAIG1kaGQAAAAA048lmtOPJZoAALuAAopuABXHAAAAAAAtaGRscgAAAAAAAAAAc291bgAAAAAAAAAAAAAAAFNvdW5kSGFuZGxlcgAAAADmbWluZgAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAKpzdGJsAAAAXnN0c2QAAAAAAAAAAQAAAE5tcDRhAAAAAAAAAAEAAAAAAAAAAAACABAAAAAAu4AAAAAAACplc2RzAAAAAAMcAAEABBRAFQAAAAAAAAAAAAAABQURkFblAAYBAgAAABBzdHRzAAAAAAAAAAAAAAAQc3RzYwAAAAAAAAAAAAAAFHN0c3oAAAAAAAAAAAAAAAAAAAAQc3RjbwAAAAAAAAAAAAAAEHNtaGQAAAAAAAAAAA==';
 
   describe('logs navigator object', function() {
-    var mockMediaKeySystemAccess;
+    it('requestMediaKeySystemAccess calls', async function(done) {
+      const mksa = await navigator.requestMediaKeySystemAccess(
+          keySystem, minimalConfigs);
 
-    beforeEach(function() {
-      navigator.requestMediaKeySystemAccess = mockFn;
-      navigator.listenersAdded_ = false;
-      listener.addListenersToNavigator_();
-    });
-
-    it('requestMediaKeySystemAccess calls', function(done) {
-      logsCall(
-        navigator.requestMediaKeySystemAccess,
-        emeLogger.RequestMediaKeySystemAccessCall,
-        ['fakeKeySystem', ['fakeConfig']],
-        navigator,
-        done);
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'RequestMediaKeySystemAccessCall',
+            // NOTE: This is a bug.  The target is not wrapped in this case.
+            // But since I'm about to replace the internals, let's ignore it for
+            // now.
+            'target': navigator,
+            'keySystem': keySystem,
+            'supportedConfigurations': minimalConfigs,
+          }));
+      done();
     });
   });
 
   describe('logs MediaKeySystemAccess object', function() {
-    var mockMediaKeySystemAccess;
+    let mksa;
 
-    beforeEach(function() {
-      mockMediaKeySystemAccess = {
-        getConfiguration: mockFn,
-        createMediaKeys: mockFn
-      };
-      listener.addListenersToMediaKeySystemAccess_(mockMediaKeySystemAccess);
+    beforeEach(async function(done) {
+      mksa = await navigator.requestMediaKeySystemAccess(
+          keySystem, minimalConfigs);
+      EmeListeners.logAndPostMessage_.calls.reset();
+      done();
     });
 
-    it('getConfiguration calls', function(done) {
-      logsCall(
-        mockMediaKeySystemAccess.getConfiguration,
-        emeLogger.GetConfigurationCall,
-        [],
-        mockMediaKeySystemAccess,
-        done);
+    it('getConfiguration calls', async function(done) {
+      const config = mksa.getConfiguration();
+
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'GetConfigurationCall',
+            'target': jasmine.objectContaining({
+              'title': 'MediaKeySystemAccess',
+            }),
+            'returned': config,
+          }));
+      done();
     });
 
-    it('createMediaKeys calls', function(done) {
-      logsCall(
-        mockMediaKeySystemAccess.createMediaKeys,
-        emeLogger.CreateMediaKeysCall,
-        [],
-        mockMediaKeySystemAccess,
-        done);
-    });
-  });
+    it('createMediaKeys calls', async function(done) {
+      const mediaKeys = await mksa.createMediaKeys();
 
-  describe('logs MediaKeys object', function() {
-    var mockMediaKeys;
-
-    beforeEach(function() {
-      // Catch call to this method.
-      spyOn(listener, 'addListenersToMediaKeySession_');
-      mockMediaKeys = {
-        createSession: mockFn,
-        setServerCertificate: mockFn
-      };
-      listener.addListenersToMediaKeys_(mockMediaKeys);
-    });
-
-    it('createSession calls', function(done) {
-      logsCall(
-        mockMediaKeys.createSession,
-        emeLogger.CreateSessionCall,
-        ['fakeSessionType'],
-        mockMediaKeys,
-        done);
-    });
-
-    it('setServerCertificate calls', function(done) {
-      logsCall(
-        mockMediaKeys.setServerCertificate,
-        emeLogger.SetServerCertificateCall,
-        ['fakeServerCertificate'],
-        mockMediaKeys,
-        done);
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'CreateMediaKeysCall',
+            'target': jasmine.objectContaining({
+              'title': 'MediaKeySystemAccess',
+            }),
+            'returned': jasmine.any(Promise),
+          }));
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'CreateMediaKeysCall Promise Result',
+            'status': 'resolved',
+            'result': mediaKeys,
+          }));
+      done();
     });
   });
 
   describe('logs MediaKeys object', function() {
-    var mockMediaKeys;
+    let mediaKeys;
 
-    beforeEach(function() {
-      // Catch call to this method.
-      spyOn(listener, 'addListenersToMediaKeySession_');
-      mockMediaKeys = {
-        createSession: mockFn,
-        setServerCertificate: mockFn
-      };
-      listener.addListenersToMediaKeys_(mockMediaKeys);
+    beforeEach(async function(done) {
+      const mksa = await navigator.requestMediaKeySystemAccess(
+          keySystem, minimalConfigs);
+      mediaKeys = await mksa.createMediaKeys();
+      EmeListeners.logAndPostMessage_.calls.reset();
+      done();
     });
 
-    it('createSession calls', function(done) {
-      logsCall(
-        mockMediaKeys.createSession,
-        emeLogger.CreateSessionCall,
-        ['fakeSessionType'],
-        mockMediaKeys,
-        done);
+    it('createSession calls', function() {
+      const session = mediaKeys.createSession('temporary');
+
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'CreateSessionCall',
+            // NOTE: This is a bug.  The target is not wrapped in this case.
+            // But since I'm about to replace the internals, let's ignore it for
+            // now.
+            'target': mediaKeys,
+            'sessionType': 'temporary',
+            'returned': jasmine.objectContaining({
+              'title': 'MediaKeySession',
+            }),
+          }));
     });
 
-    it('setServerCertificate calls', function(done) {
-      logsCall(
-        mockMediaKeys.setServerCertificate,
-        emeLogger.SetServerCertificateCall,
-        ['fakeServerCertificate'],
-        mockMediaKeys,
-        done);
+    it('setServerCertificate calls', async function(done) {
+      // TODO: Update this URL after Jasmine upgrade
+      const response = await fetch('spec/server-cert');
+      expect(response.ok).toBe(true);
+      if (!response.ok) {
+        done();
+        return;
+      }
+
+      const serverCertificate = await response.arrayBuffer();
+      await mediaKeys.setServerCertificate(serverCertificate);
+
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'SetServerCertificateCall',
+            // NOTE: This is a bug.  The target is not wrapped in this case.
+            // But since I'm about to replace the internals, let's ignore it for
+            // now.
+            'target': mediaKeys,
+            'serverCertificate': new Uint8Array(serverCertificate),
+          }));
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'SetServerCertificateCall Promise Result',
+            'status': 'resolved',
+          }));
+      done();
     });
   });
 
   describe('logs MediaKeySession object', function() {
-    var mockMediaKeySession;
+    let session;
 
-    beforeEach(function() {
-      mockMediaKeySession = {
-        generateRequest: mockFn,
-        load: mockFn,
-        update: mockFn,
-        close: mockFn,
-        remove: mockFn,
-        addEventListener: jasmine.createSpy('addEventListenerMock')
-      };
-      listener.addListenersToMediaKeySession_(mockMediaKeySession);
+    beforeEach(async function(done) {
+      const mksa = await navigator.requestMediaKeySystemAccess(
+          keySystem, minimalConfigs);
+      const mediaKeys = await mksa.createMediaKeys();
+      session = mediaKeys.createSession('temporary');
+      EmeListeners.logAndPostMessage_.calls.reset();
+      done();
     });
 
-    it('generateRequest calls', function(done) {
-      logsCall(
-        mockMediaKeySession.generateRequest,
-        emeLogger.GenerateRequestCall,
-        ['fakeInitDataType', 'fakeInitData'],
-        mockMediaKeySession,
-        done);
+    it('generateRequest calls', async function(done) {
+      await session.generateRequest('cenc', initData);
+
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'GenerateRequestCall',
+            'target': jasmine.objectContaining({
+              'title': 'MediaKeySession',
+            }),
+            'initDataType': 'cenc',
+            'initData': initData,
+          }));
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'GenerateRequestCall Promise Result',
+            'status': 'resolved',
+          }));
+      done();
     });
 
-    it('load calls', function(done) {
-      logsCall(
-        mockMediaKeySession.load,
-        emeLogger.LoadCall,
-        ['fakeSessionId'],
-        mockMediaKeySession,
-        done);
+    it('load calls', async function(done) {
+      try {
+        await session.load('fakeSessionId');
+      } catch (exception) {}  // Will fail with a fake session ID; ignore it
+
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'LoadCall',
+            'target': jasmine.objectContaining({
+              'title': 'MediaKeySession',
+            }),
+          }));
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'LoadCall Promise Result',
+            'status': 'rejected',
+          }));
+      done();
     });
 
-    it('update calls', function(done) {
-      logsCall(
-        mockMediaKeySession.update,
-        emeLogger.UpdateCall,
-        ['fakeResponse'],
-        mockMediaKeySession,
-        done,
-        'fakeResponse');
+    it('update calls', async function(done) {
+      const fakeLicenseResponse = new Uint8Array([1, 2, 3]);
+      try {
+        await session.update(fakeLicenseResponse);
+      } catch (exception) {} // Will fail with fake data; ignore it
+
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'UpdateCall',
+            'target': jasmine.objectContaining({
+              'title': 'MediaKeySession',
+            }),
+            'response': fakeLicenseResponse,
+          }));
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'UpdateCall Promise Result',
+            'status': 'rejected',
+          }));
+      done();
     });
 
-    it('close calls', function(done) {
-      logsCall(
-        mockMediaKeySession.close,
-        emeLogger.CloseCall,
-        [],
-        mockMediaKeySession,
-        done);
+    it('close calls', async function(done) {
+      try {
+        await session.close();
+      } catch (exception) {}  // Will fail due to invalid state; ignore it
+
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'CloseCall',
+            'target': jasmine.objectContaining({
+              'title': 'MediaKeySession',
+            }),
+          }));
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'CloseCall Promise Result',
+            'status': 'rejected',
+          }));
+      done();
     });
 
-    it('remove calls', function(done) {
-      logsCall(
-        mockMediaKeySession.remove,
-        emeLogger.RemoveCall,
-        [],
-        mockMediaKeySession,
-        done);
+    it('remove calls', async function(done) {
+      try {
+        await session.remove();
+      } catch (exception) {}  // Will fail due to invalid state; ignore it
+
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'RemoveCall',
+            'target': jasmine.objectContaining({
+              'title': 'MediaKeySession',
+            }),
+          }));
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'RemoveCall Promise Result',
+            'status': 'rejected',
+          }));
+      done();
     });
 
     it('events', function() {
-      // Needs to be an object that implements the EventTarget interface.
-      mockMediaKeySession = document.createElement('video');
-      listener.addListenersToMediaKeySession_(mockMediaKeySession);
-      for (var e in events) {
-        mockMediaKeySession.dispatchEvent(events[e]);
-      }
-      expect(EmeListeners.logEvent.calls.count()).toEqual(2);
-      expectLogEvent(emeLogger.MessageEvent, 'messageEvent');
-      expectLogEvent(
-          emeLogger.KeyStatusesChangeEvent, 'keyStatusesChangeEvent');
+      session.dispatchEvent(new Event('message'));
+      session.dispatchEvent(new Event('keystatuseschange'));
+
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'MessageEvent',
+            'target': jasmine.objectContaining({
+              'title': 'MediaKeySession',
+            }),
+            'event': jasmine.any(Event),
+          }));
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'KeyStatusesChangeEvent',
+            'target': jasmine.objectContaining({
+              'title': 'MediaKeySession',
+            }),
+            'event': jasmine.any(Event),
+          }));
     });
   });
 
-  describe('logs unprefixed EME', function() {
-    var mockHtmlMedia;
+  describe('logs HTML media elements', function() {
+    var mediaElement;
 
-    beforeEach(function() {
-      mockHtmlMedia = {
-        setMediaKeys: mockFn,
-        play: mockFn
-      };
-      listener.addEmeMethodListeners_(mockHtmlMedia);
+    beforeAll(function() {
+      // Make a real video element to log access to.
+      mediaElement = document.createElement('video');
+
+      // Set a tiny mp4 data URI as a source, so we can hit play.
+      mediaElement.src = tinyMp4;
+
+      // Mute it and hide it visually.
+      mediaElement.muted = true;
+      mediaElement.style.display = 'none';
+
+      // The element must be in the DOM to be discovered.
+      document.body.appendChild(mediaElement);
     });
 
-
-    it('setMediaKeys calls', function(done) {
-      logsCall(
-        mockHtmlMedia.setMediaKeys,
-        emeLogger.SetMediaKeysCall,
-        ['fakeMediaKeys'],
-        mockHtmlMedia,
-        done);
+    afterAll(function() {
+      mediaElement.remove();
     });
 
-    it('play calls', function(done) {
-      logsCall(
-        mockHtmlMedia.play,
-        emeLogger.PlayCall,
-        [],
-        mockHtmlMedia,
-        done);
-    });
+    it('setMediaKeys calls', async function(done) {
+      const mksa = await navigator.requestMediaKeySystemAccess(
+          keySystem, minimalConfigs);
+      const mediaKeys = await mksa.createMediaKeys();
+      await mediaElement.setMediaKeys(mediaKeys);
 
-    it('events', function() {
-      spyOn(console, 'error');
-      mockHtmlMedia = document.createElement('video');
-      listener.addEmeEventListeners_(mockHtmlMedia);
-      for (var e in events) {
-        mockHtmlMedia.dispatchEvent(events[e]);
-      }
-      expect(EmeListeners.logEvent.calls.count()).toEqual(3);
-      expectLogEvent(emeLogger.PlayEvent, 'playEvent');
-      expectLogEvent(emeLogger.ErrorEvent, 'errorEvent');
-      expectLogEvent(emeLogger.EncryptedEvent, 'encryptedEvent');
-      expect(console.error.calls.count()).toEqual(1);
-    });
-  });
-
-  it('logs call using given proto', function() {
-    spyOn(console, 'log');
-    logCallSpy.and.callThrough();
-    var mediaElement = document.createElement('video');
-    var expected = new emeLogger.SetMediaKeysCall(
-        ['fakeMediaKeys'], mediaElement, null);
-    EmeListeners.logCall(
-        emeLogger.SetMediaKeysCall, ['fakeMediaKeys'], null, mediaElement);
-    expect(console.log).toHaveBeenCalledWith(expected);
-  });
-
-  function logsCall(fn, proto, args, element, done, key, keySystem) {
-    fn.apply(this, args).then(function() {
-      expect(EmeListeners.logCall.calls.count()).toEqual(1);
-      expect(EmeListeners.logPromiseResult.calls.count()).toEqual(1);
-      expect(mockFn.calls.count()).toEqual(1);
-      expectLogCall(proto, args, element, key, keySystem);
-      done();
-    }).catch(function(err) {
-      fail(err);
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'SetMediaKeysCall',
+            'target': jasmine.objectContaining({
+              'title': 'HTMLVideoElement',
+            }),
+            'mediaKeys': mediaKeys,
+          }));
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'SetMediaKeysCall Promise Result',
+            'status': 'resolved',
+          }));
       done();
     });
-  }
+
+    it('play calls', async function(done) {
+      await mediaElement.play();
+
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'PlayCall',
+            'target': jasmine.objectContaining({
+              'title': 'HTMLVideoElement',
+            }),
+          }));
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'PlayCall Promise Result',
+            'status': 'resolved',
+          }));
+      done();
+    });
+
+    it('events', async function(done) {
+      mediaElement.pause();
+      await mediaElement.play();  // Will dispatch the play event
+
+      // Simulate a real error event, which also sets this property:
+      Object.defineProperty(mediaElement, 'error', {value: {code: 5}});
+      mediaElement.dispatchEvent(new Event('error'));
+
+      mediaElement.dispatchEvent(new Event('encrypted'));
+
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'PlayEvent',
+            'target': jasmine.objectContaining({
+              'title': 'HTMLVideoElement',
+            }),
+            'event': jasmine.any(Event),
+          }));
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'ErrorEvent',
+            'target': jasmine.objectContaining({
+              'title': 'HTMLVideoElement',
+            }),
+            'event': jasmine.any(Event),
+          }));
+      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'title': 'EncryptedEvent',
+            'target': jasmine.objectContaining({
+              'title': 'HTMLVideoElement',
+            }),
+            'event': jasmine.any(Event),
+          }));
+      done();
+    });
+  });
 });

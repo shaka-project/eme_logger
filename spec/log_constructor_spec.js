@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * @fileoverview emeLogConstructor unit test.
+ * @fileoverview Tests for the log window.
  */
 
-describe('emeLogConstructor', function() {
+describe('Log window', function() {
   it('opens the logging window', function() {
     spyOn(window, 'open');
     emeLogConstructor.openWindow();
@@ -25,12 +25,14 @@ describe('emeLogConstructor', function() {
   });
 
   it('reports the logging window is open', function() {
-    loggingWindow = true;
+    spyOn(window, 'open').and.returnValue({closed: false});
+    emeLogConstructor.openWindow();
     expect(emeLogConstructor.isWindowOpen()).toBe(true);
   });
 
   it('reports the logging window is closed', function() {
-    loggingWindow = false;
+    spyOn(window, 'open').and.returnValue({closed: true});
+    emeLogConstructor.openWindow();
     expect(emeLogConstructor.isWindowOpen()).toBe(false);
   });
 
