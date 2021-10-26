@@ -1,0 +1,22 @@
+{
+  "srcDir": ".",
+  "srcFiles": [
+    "log_constructor.js",
+    "prototypes.js",
+    "mutation-summary.js",
+    "eme_listeners.js"
+  ],
+  "specDir": "spec",
+  "specFiles": [
+    "log_window_tests.js",
+    "eme_trace_tests.js"
+  ],
+  "env": {
+    "stopSpecOnExpectationFailure": false,
+    "stopOnSpecFailure": false,
+    "random": false
+  },
+  "browser": {
+    "name": "chrome"
+  }
+}

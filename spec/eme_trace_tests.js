@@ -16,9 +16,8 @@
  * @fileoverview Tests for EME API tracing.
  */
 
-// TODO: Remove done after Jasmine upgrade that offers support for async
-describe('EME tracing', function() {
-  beforeEach(function() {
+describe('EME tracing', () => {
+  beforeEach(() => {
     spyOn(EmeListeners, 'logAndPostMessage_').and.callFake((log) => {
       // Validate that the logs can always be serialized.  We don't care about
       // the output at this level.
@@ -52,8 +51,8 @@ describe('EME tracing', function() {
   // A completely valid mp4 in a data URI (an audio init segment).
   const tinyMp4 = 'data:audio/mp4;base64,AAAAGGZ0eXBkYXNoAAAAAGlzbzZtcDQxAAAC0W1vb3YAAABsbXZoZAAAAADTjyWa048lmgAAu4ACim4AAAEAAAEAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAACGbWV0YQAAAAAAAAAgaGRscgAAAAAAAAAASUQzMgAAAAAAAAAAAAAAAAAAAFpJRDMyAAAAABXHSUQzBAAAAAAAQlBSSVYAAAA4AABodHRwczovL2dpdGh1Yi5jb20vZ29vZ2xlL2VkYXNoLXBhY2thZ2VyAGZlNjc3NWEtcmVsZWFzZQAAADhtdmV4AAAAEG1laGQAAAAAAopuAAAAACB0cmV4AAAAAAAAAAEAAAABAAAEAAAAAAAAAAAAAAABn3RyYWsAAABcdGtoZAAAAAPTjyWa048lmgAAAAEAAAAAAopuAAAAAAAAAAAAAAAAAAEAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAATttZGlhAAAAIG1kaGQAAAAA048lmtOPJZoAALuAAopuABXHAAAAAAAtaGRscgAAAAAAAAAAc291bgAAAAAAAAAAAAAAAFNvdW5kSGFuZGxlcgAAAADmbWluZgAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAKpzdGJsAAAAXnN0c2QAAAAAAAAAAQAAAE5tcDRhAAAAAAAAAAEAAAAAAAAAAAACABAAAAAAu4AAAAAAACplc2RzAAAAAAMcAAEABBRAFQAAAAAAAAAAAAAABQURkFblAAYBAgAAABBzdHRzAAAAAAAAAAAAAAAQc3RzYwAAAAAAAAAAAAAAFHN0c3oAAAAAAAAAAAAAAAAAAAAQc3RjbwAAAAAAAAAAAAAAEHNtaGQAAAAAAAAAAA==';
 
-  describe('logs navigator object', function() {
-    it('requestMediaKeySystemAccess calls', async function(done) {
+  describe('logs navigator object', () => {
+    it('requestMediaKeySystemAccess calls', async () => {
       const mksa = await navigator.requestMediaKeySystemAccess(
           keySystem, minimalConfigs);
 
@@ -67,21 +66,19 @@ describe('EME tracing', function() {
             'keySystem': keySystem,
             'supportedConfigurations': minimalConfigs,
           }));
-      done();
     });
   });
 
-  describe('logs MediaKeySystemAccess object', function() {
+  describe('logs MediaKeySystemAccess object', () => {
     let mksa;
 
-    beforeEach(async function(done) {
+    beforeEach(async () => {
       mksa = await navigator.requestMediaKeySystemAccess(
           keySystem, minimalConfigs);
       EmeListeners.logAndPostMessage_.calls.reset();
-      done();
     });
 
-    it('getConfiguration calls', async function(done) {
+    it('getConfiguration calls', async () => {
       const config = mksa.getConfiguration();
 
       expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
@@ -92,10 +89,9 @@ describe('EME tracing', function() {
             }),
             'returned': config,
           }));
-      done();
     });
 
-    it('createMediaKeys calls', async function(done) {
+    it('createMediaKeys calls', async () => {
       const mediaKeys = await mksa.createMediaKeys();
 
       expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
@@ -112,22 +108,20 @@ describe('EME tracing', function() {
             'status': 'resolved',
             'result': mediaKeys,
           }));
-      done();
     });
   });
 
-  describe('logs MediaKeys object', function() {
+  describe('logs MediaKeys object', () => {
     let mediaKeys;
 
-    beforeEach(async function(done) {
+    beforeEach(async () => {
       const mksa = await navigator.requestMediaKeySystemAccess(
           keySystem, minimalConfigs);
       mediaKeys = await mksa.createMediaKeys();
       EmeListeners.logAndPostMessage_.calls.reset();
-      done();
     });
 
-    it('createSession calls', function() {
+    it('createSession calls', () => {
       const session = mediaKeys.createSession('temporary');
 
       expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
@@ -144,12 +138,10 @@ describe('EME tracing', function() {
           }));
     });
 
-    it('setServerCertificate calls', async function(done) {
-      // TODO: Update this URL after Jasmine upgrade
-      const response = await fetch('spec/server-cert');
+    it('setServerCertificate calls', async () => {
+      const response = await fetch('__spec__/server-cert');
       expect(response.ok).toBe(true);
       if (!response.ok) {
-        done();
         return;
       }
 
@@ -170,23 +162,21 @@ describe('EME tracing', function() {
             'title': 'SetServerCertificateCall Promise Result',
             'status': 'resolved',
           }));
-      done();
     });
   });
 
-  describe('logs MediaKeySession object', function() {
+  describe('logs MediaKeySession object', () => {
     let session;
 
-    beforeEach(async function(done) {
+    beforeEach(async () => {
       const mksa = await navigator.requestMediaKeySystemAccess(
           keySystem, minimalConfigs);
       const mediaKeys = await mksa.createMediaKeys();
       session = mediaKeys.createSession('temporary');
       EmeListeners.logAndPostMessage_.calls.reset();
-      done();
     });
 
-    it('generateRequest calls', async function(done) {
+    it('generateRequest calls', async () => {
       await session.generateRequest('cenc', initData);
 
       expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
@@ -203,10 +193,9 @@ describe('EME tracing', function() {
             'title': 'GenerateRequestCall Promise Result',
             'status': 'resolved',
           }));
-      done();
     });
 
-    it('load calls', async function(done) {
+    it('load calls', async () => {
       try {
         await session.load('fakeSessionId');
       } catch (exception) {}  // Will fail with a fake session ID; ignore it
@@ -223,10 +212,9 @@ describe('EME tracing', function() {
             'title': 'LoadCall Promise Result',
             'status': 'rejected',
           }));
-      done();
     });
 
-    it('update calls', async function(done) {
+    it('update calls', async () => {
       const fakeLicenseResponse = new Uint8Array([1, 2, 3]);
       try {
         await session.update(fakeLicenseResponse);
@@ -245,10 +233,9 @@ describe('EME tracing', function() {
             'title': 'UpdateCall Promise Result',
             'status': 'rejected',
           }));
-      done();
     });
 
-    it('close calls', async function(done) {
+    it('close calls', async () => {
       try {
         await session.close();
       } catch (exception) {}  // Will fail due to invalid state; ignore it
@@ -265,10 +252,9 @@ describe('EME tracing', function() {
             'title': 'CloseCall Promise Result',
             'status': 'rejected',
           }));
-      done();
     });
 
-    it('remove calls', async function(done) {
+    it('remove calls', async () => {
       try {
         await session.remove();
       } catch (exception) {}  // Will fail due to invalid state; ignore it
@@ -285,10 +271,9 @@ describe('EME tracing', function() {
             'title': 'RemoveCall Promise Result',
             'status': 'rejected',
           }));
-      done();
     });
 
-    it('events', function() {
+    it('events', () => {
       session.dispatchEvent(new Event('message'));
       session.dispatchEvent(new Event('keystatuseschange'));
 
@@ -311,10 +296,10 @@ describe('EME tracing', function() {
     });
   });
 
-  describe('logs HTML media elements', function() {
+  describe('logs HTML media elements', () => {
     var mediaElement;
 
-    beforeAll(function() {
+    beforeAll(() => {
       // Make a real video element to log access to.
       mediaElement = document.createElement('video');
 
@@ -329,11 +314,11 @@ describe('EME tracing', function() {
       document.body.appendChild(mediaElement);
     });
 
-    afterAll(function() {
+    afterAll(() => {
       mediaElement.remove();
     });
 
-    it('setMediaKeys calls', async function(done) {
+    it('setMediaKeys calls', async () => {
       const mksa = await navigator.requestMediaKeySystemAccess(
           keySystem, minimalConfigs);
       const mediaKeys = await mksa.createMediaKeys();
@@ -352,10 +337,9 @@ describe('EME tracing', function() {
             'title': 'SetMediaKeysCall Promise Result',
             'status': 'resolved',
           }));
-      done();
     });
 
-    it('play calls', async function(done) {
+    it('play calls', async () => {
       await mediaElement.play();
 
       expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
@@ -370,10 +354,9 @@ describe('EME tracing', function() {
             'title': 'PlayCall Promise Result',
             'status': 'resolved',
           }));
-      done();
     });
 
-    it('events', async function(done) {
+    it('events', async () => {
       mediaElement.pause();
       await mediaElement.play();  // Will dispatch the play event
 
@@ -407,7 +390,6 @@ describe('EME tracing', function() {
             }),
             'event': jasmine.any(Event),
           }));
-      done();
     });
   });
 });
