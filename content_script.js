@@ -17,32 +17,23 @@
  */
 
 // Load required scripts into the current web page.
-var urls = ['/mutation-summary.js', '/prototypes.js', '/eme_listeners.js'];
-for (var i = 0; i < urls.length; i++) {
-  var mainScriptUrl = chrome.extension.getURL(urls[i]);
+const urls = ['/mutation-summary.js', '/prototypes.js', '/eme_listeners.js'];
+for (const url of urls) {
+  const absoluteUrl = chrome.extension.getURL(url);
 
-  // We cannot load the main script using '.src' because such scripts are not
-  // guaranteed to run immediately.
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET', mainScriptUrl, true);
-
-  xhr.onload = function(e) {
-    var xhr = e.target;
-    var mainScript = document.createElement('script');
-    mainScript.type = 'application/javascript';
-    if (xhr.status == 200) {
-      mainScript.text = xhr.responseText;
-      document.documentElement.appendChild(mainScript);
-    }
-  };
-
-  xhr.send();
+  // Insert a script tag and force it to load synchronously.
+  const script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.defer = false;
+  script.async = false;
+  script.src = absoluteUrl;
+  (document.head || document.documentElement).appendChild(script);
 }
 
 // Listen for message events posted from EmeListeners, then forwards
 // message to the background page.
-window.addEventListener('message', function(event) {
-  if (event.data.type == 'emeLogMessage')
-    chrome.runtime.sendMessage({data: event.data});
+window.addEventListener('message', (event) => {
+  if (event.data.type == 'emeTraceLog') {
+    chrome.runtime.sendMessage({log: event.data.log});
+  }
 });
-
