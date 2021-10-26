@@ -75,7 +75,6 @@ describe('EME tracing', () => {
     beforeEach(async () => {
       mksa = await navigator.requestMediaKeySystemAccess(
           keySystem, minimalConfigs);
-      emeLogger.calls.reset();
     });
 
     it('getConfiguration calls', async () => {
@@ -112,7 +111,6 @@ describe('EME tracing', () => {
       const mksa = await navigator.requestMediaKeySystemAccess(
           keySystem, minimalConfigs);
       mediaKeys = await mksa.createMediaKeys();
-      emeLogger.calls.reset();
     });
 
     it('createSession calls', () => {
@@ -157,7 +155,6 @@ describe('EME tracing', () => {
           keySystem, minimalConfigs);
       const mediaKeys = await mksa.createMediaKeys();
       session = mediaKeys.createSession('temporary');
-      emeLogger.calls.reset();
     });
 
     it('generateRequest calls', async () => {
@@ -342,6 +339,68 @@ describe('EME tracing', () => {
               'initDataType': 'webm',
               'initData': new Uint8Array([1, 2, 3]),
             }),
+          }));
+    });
+  });
+
+  describe('logs MediaKeys created via MediaCapabilities', () => {
+    const basicDecodingConfig = {
+      type: 'media-source',
+      video: {
+        contentType: 'video/mp4; codecs="avc1.42c01e"',
+        width: 256,
+        height: 110,
+        bitrate: 103942,
+        framerate: 24,
+      },
+      keySystemConfiguration: {
+        keySystem: 'com.widevine.alpha',
+        initDataType: 'cenc',
+        sessionTypes: ['temporary'],
+      },
+    };
+
+    it('decodingInfo calls', async () => {
+      const result = await navigator.mediaCapabilities.decodingInfo(
+          basicDecodingConfig);
+
+      expect(emeLogger).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'type': TraceAnything.LogTypes.Method,
+            'className': 'MediaCapabilities',
+            'methodName': 'decodingInfo',
+            'args': [basicDecodingConfig],
+            'result': result,
+          }));
+    });
+
+    // This shows that even though the result of decodingInfo is a plain,
+    // untyped object, the TraceAnything configuration allows the engine to
+    // explore the keySystemAccess field and properly shim the EME classes that
+    // come out of decodingInfo.
+    it('MediaKeys instances', async () => {
+      const result = await navigator.mediaCapabilities.decodingInfo(
+          basicDecodingConfig);
+      expect(result.keySystemAccess).toBeTruthy();
+
+      const mediaKeys = await result.keySystemAccess.createMediaKeys();
+      const session = await mediaKeys.createSession('temporary');
+
+      expect(emeLogger).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'type': TraceAnything.LogTypes.Method,
+            'className': 'MediaKeySystemAccess',
+            'methodName': 'createMediaKeys',
+            'args': [],
+            'result': mediaKeys,
+          }));
+      expect(emeLogger).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'type': TraceAnything.LogTypes.Method,
+            'className': 'MediaKeys',
+            'methodName': 'createSession',
+            'args': ['temporary'],
+            'result': session,
           }));
     });
   });

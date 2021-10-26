@@ -191,6 +191,13 @@ const options = {
 
 // These will be shimmed in place.
 TraceAnything.traceMember(navigator, 'requestMediaKeySystemAccess', options);
+TraceAnything.traceMember(
+    navigator.mediaCapabilities, 'decodingInfo', combineOptions(options, {
+      // The result from decodingInfo is a plain object.  We need to dive into
+      // this field in particular to find MediaKeySystemAccess instances to
+      // trace.
+      exploreResultFields: ['keySystemAccess'],
+    }));
 
 // These constructors are not used directly, but this registers them to the
 // tracing system so that instances we find later will be shimmed.
