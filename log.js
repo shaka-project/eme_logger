@@ -15,23 +15,13 @@
  *
  * @fileoverview Controls for the logging frame.
  */
-
-var emeLog = {};
-
-
-/**
- * Clears the log.
- * @param {Event} e A click event.
- */
-emeLog.clearLog = function(e) {
-  var list = document.getElementById('eme-log');
-  while (list.hasChildNodes()) {
-    list.removeChild(list.firstChild);
-  }
-};
-
-
 document.addEventListener('DOMContentLoaded', function() {
-  var clearButton = document.querySelector('#clear-button');
-  clearButton.addEventListener('click', emeLog.clearLog);
+  const clearButton = document.querySelector('#clear-button');
+  clearButton.addEventListener('click', () => {
+    // Clear the log.
+    const list = document.getElementById('eme-log');
+    while (list.hasChildNodes()) {
+      list.removeChild(list.firstChild);
+    }
+  });
 });

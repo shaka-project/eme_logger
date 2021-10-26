@@ -16,11 +16,26 @@
 <html>
   <head>
     <script src="log.js"></script>
+    <style>
+#clear-button {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+}
+
+#download-button {
+  position: fixed;
+  top: 40px;
+  right: 10px;
+  display: none;  /* initially hidden */
+}
+    </style>
   </head>
   <body>
     <h1>EME Method Call and Event Log</h1>
-    <button id="clear-button" style="position:fixed; top:10px; right:10px;">Clear log</button>
+    <p>Some personally identifiable information may be in the log. Be careful about posting the log on bug reports.</p>
+    <button id="clear-button">Clear log</button>
+    <a id="download-button" download="EMELogFile.txt"><button>Download log</button></a>
     <ul id="eme-log"></ul>
   </body>
 </html>
-

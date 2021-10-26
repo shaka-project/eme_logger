@@ -200,6 +200,9 @@ emeLogConstructor.getIndentString = function(number) {
  */
 emeLogConstructor.openWindow = function() {
   loggingWindow = window.open('log.html', 'EME Log', 'width=700,height=600');
+  const downloadButton =
+      loggingWindow.document.querySelector('#download-button');
+  downloadButton.href = emeLogConstructor.logFileUrl_;
 };
 
 
@@ -283,6 +286,11 @@ emeLogConstructor.initializeLogFile = function(filesystem) {
   filesystem.root.getFile('log.txt', {create: true}, function(fileEntry) {
     fileEntry.createWriter(initializeFileWriter);
     emeLogConstructor.logFileUrl_ = fileEntry.toURL();
+    if (loggingWindow) {
+      const downloadButton =
+          loggingWindow.document.querySelector('#download-button');
+      downloadButton.href = emeLogConstructor.logFileUrl_;
+    }
   });
 };
 

@@ -17,21 +17,44 @@
  */
 
 describe('Log window', function() {
+  let mockWindow;
+  let mockLogElement;
+
+  beforeAll(() => {
+    const mockDocument = document.createElement('div');
+
+    const mockDownloadButton = document.createElement('a');
+    mockDownloadButton.id = 'download-button';
+    mockDocument.appendChild(mockDownloadButton);
+
+    document.body.appendChild(mockDocument);
+
+    mockWindow = {
+      closed: false,
+      focus: () => {},
+      document: mockDocument,
+    };
+  });
+
+  beforeEach(() => {
+    // Return the mock window when we are supposed to open one.
+    mockWindow.closed = false;
+    spyOn(window, 'open').and.returnValue(mockWindow);
+  });
+
   it('opens the logging window', function() {
-    spyOn(window, 'open');
     emeLogConstructor.openWindow();
     expect(window.open).toHaveBeenCalledWith(
       'log.html', jasmine.any(String), jasmine.any(String));
   });
 
   it('reports the logging window is open', function() {
-    spyOn(window, 'open').and.returnValue({closed: false});
     emeLogConstructor.openWindow();
     expect(emeLogConstructor.isWindowOpen()).toBe(true);
   });
 
   it('reports the logging window is closed', function() {
-    spyOn(window, 'open').and.returnValue({closed: true});
+    mockWindow.closed = true;
     emeLogConstructor.openWindow();
     expect(emeLogConstructor.isWindowOpen()).toBe(false);
   });

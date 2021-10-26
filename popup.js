@@ -13,39 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * @fileoverview Controls for the browser action options.
+ * @fileoverview Code for the "popup" when the extension is clicked.
  */
 
-var emePopup = {};
+// When the user clicks the extension icon, open the EME log window.
+document.addEventListener('DOMContentLoaded', () => {
+  const backgroundPage = chrome.extension.getBackgroundPage();
+  const emeLogConstructor = backgroundPage.emeLogConstructor;
 
-
-/**
- * Handles opening and closing of the separate logging frame.
- * @param {Event} e A click event.
- */
-emePopup.handleSeparateFrame = function(e) {
-  if (!chrome.extension.getBackgroundPage().emeLogConstructor.isWindowOpen()) {
-    chrome.extension.getBackgroundPage().emeLogConstructor.openWindow();
-  } else {
-    chrome.extension.getBackgroundPage().emeLogConstructor.closeWindow();
-  }
-  window.close();
-};
-
-
-document.addEventListener('DOMContentLoaded', function() {
-  var loggingButton = document.querySelector('#option-separate-frame');
-  loggingButton.innerHTML =
-      chrome.extension.getBackgroundPage().emeLogConstructor.isWindowOpen() ?
-      'Close log window' : 'Open log window';
-  loggingButton.addEventListener('click', emePopup.handleSeparateFrame);
-  var link = document.getElementById('option-download-file');
-  var href =
-      chrome.extension.getBackgroundPage().emeLogConstructor.getLogFileUrl();
-  if (href == '') {
-    link.disabled = true;
-  } else {
-    link.disabled = false;
-    link.href = href;
-  }
+  // Without a small delay, it opens behind the current window.  Adding the
+  // delay makes it a proper popup that takes focus.
+  setTimeout(() => {
+    emeLogConstructor.openWindow();
+    window.close();
+  }, 100);
 });
