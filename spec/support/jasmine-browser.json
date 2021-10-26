@@ -8,8 +8,8 @@
   ],
   "specDir": "spec",
   "specFiles": [
-    "log_window_tests.js",
-    "eme_trace_tests.js"
+    "log-window-tests.js",
+    "eme-trace-tests.js"
   ],
   "env": {
     "stopSpecOnExpectationFailure": false,
