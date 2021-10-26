@@ -22,7 +22,7 @@
     "128": "icons/EME_logo_128.png"
   },
   "background" : {
-    "scripts": ["log_constructor.js"]
+    "scripts": ["log-window.js"]
   },
   "browser_action": {
     "default_title": "EME Logger",
@@ -30,8 +30,7 @@
   },
   "permissions": ["unlimitedStorage"],
   "web_accessible_resources": [
-    "mutation-summary.js",
-    "prototypes.js",
-    "eme_listeners.js"
+    "trace-anything.js",
+    "eme-trace-config.js"
   ]
 }

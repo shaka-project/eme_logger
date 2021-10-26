@@ -17,7 +17,7 @@
  */
 
 // Load required scripts into the current web page.
-const urls = ['/mutation-summary.js', '/prototypes.js', '/eme_listeners.js'];
+const urls = ['/trace-anything.js', '/eme-trace-config.js'];
 for (const url of urls) {
   const absoluteUrl = chrome.extension.getURL(url);
 

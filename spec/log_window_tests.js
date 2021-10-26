@@ -16,17 +16,13 @@
  * @fileoverview Tests for the log window.
  */
 
-describe('Log window', function() {
+describe('Log window', () => {
+  let mockDocument;
   let mockWindow;
   let mockLogElement;
 
   beforeAll(() => {
-    const mockDocument = document.createElement('div');
-
-    const mockDownloadButton = document.createElement('a');
-    mockDownloadButton.id = 'download-button';
-    mockDocument.appendChild(mockDownloadButton);
-
+    mockDocument = document.createElement('div');
     document.body.appendChild(mockDocument);
 
     mockWindow = {
@@ -37,114 +33,240 @@ describe('Log window', function() {
   });
 
   beforeEach(() => {
+    // Reset the singleton we're testing.
+    EmeLogWindow.instance = new EmeLogWindow();
+
     // Return the mock window when we are supposed to open one.
-    mockWindow.closed = false;
     spyOn(window, 'open').and.returnValue(mockWindow);
+
+    // Clear the contents of the document.
+    while (mockDocument.firstChild) {
+      mockDocument.firstChild.remove();
+    }
+
+    // Add the element where log items will go.
+    mockLogElement = document.createElement('ul');
+    mockLogElement.id = 'eme-log';
+    mockDocument.appendChild(mockLogElement);
   });
 
-  it('opens the logging window', function() {
-    emeLogConstructor.openWindow();
-    expect(window.open).toHaveBeenCalledWith(
-      'log.html', jasmine.any(String), jasmine.any(String));
+  describe('Window handling', () => {
+    it('opens the logging window', () => {
+      EmeLogWindow.instance.open();
+      expect(window.open).toHaveBeenCalledWith(
+        'log.html', jasmine.any(String), jasmine.any(String));
+    });
+
+    it('reports the logging window is open', () => {
+      mockWindow.closed = false;
+      EmeLogWindow.instance.open();
+      expect(EmeLogWindow.instance.isOpen()).toBe(true);
+    });
+
+    it('reports the logging window is closed', () => {
+      mockWindow.closed = true;
+      EmeLogWindow.instance.open();
+      expect(EmeLogWindow.instance.isOpen()).toBe(false);
+    });
   });
 
-  it('reports the logging window is open', function() {
-    emeLogConstructor.openWindow();
-    expect(emeLogConstructor.isWindowOpen()).toBe(true);
+  it('logs with timestamps', () => {
+    const date = new Date('July 20, 1969 12:34:56 UTC');
+    EmeLogWindow.instance.open();
+    EmeLogWindow.instance.appendLog({
+      timestamp: date.getTime(),
+    });
+    expect(mockLogElement.querySelector('h3').textContent)
+        .toContain('1969-07-20 12:34:56');
   });
 
-  it('reports the logging window is closed', function() {
-    mockWindow.closed = true;
-    emeLogConstructor.openWindow();
-    expect(emeLogConstructor.isWindowOpen()).toBe(false);
+  it('shows warnings', () => {
+    EmeLogWindow.instance.open();
+    EmeLogWindow.instance.appendLog({
+      timestamp: Date.now(),
+      type: TraceAnything.LogTypes.Warning,
+      message: 'Oh no!',
+    });
+
+    expect(mockLogElement.querySelector('.title').textContent)
+        .toContain('WARNING');
+    expect(mockLogElement.querySelector('.title').style.color)
+        .toBe('red');
+    expect(mockLogElement.querySelector('.data').textContent)
+        .toContain('Oh no!');
   });
 
-  it('builds a formatted log item', function() {
-    var data = {
-        title: 'Test Data',
-        names: ['Name 1'],
-        values: ['Value 1']
-    };
-    var expectedString = '    Name 1:  Value 1';
-    var formattedItem = emeLogConstructor.buildFormattedLogItem(data);
-    expect(formattedItem.title).toEqual(data.title);
-    expect(formattedItem.logData).toEqual(expectedString);
+  describe('sets an appropriate title', () => {
+    beforeEach(() => {
+      EmeLogWindow.instance.open();
+    });
+
+    it('for constructors', () => {
+      EmeLogWindow.instance.appendLog({
+        timestamp: Date.now(),
+        type: TraceAnything.LogTypes.Constructor,
+        className: 'SomeClass',
+        args: [],
+      });
+      expect(mockLogElement.querySelector('.title').textContent)
+          .toContain('new SomeClass');
+    });
+
+    it('for methods', () => {
+      EmeLogWindow.instance.appendLog({
+        timestamp: Date.now(),
+        type: TraceAnything.LogTypes.Method,
+        className: 'SomeClass',
+        methodName: 'someMethod',
+        args: [],
+      });
+      expect(mockLogElement.querySelector('.title').textContent)
+          .toContain('SomeClass.someMethod');
+    });
+
+    it('for getters', () => {
+      EmeLogWindow.instance.appendLog({
+        timestamp: Date.now(),
+        type: TraceAnything.LogTypes.Getter,
+        className: 'SomeClass',
+        memberName: 'someMember',
+      });
+      expect(mockLogElement.querySelector('.title').textContent)
+          .toContain('SomeClass.someMember');
+    });
+
+    it('for setters', () => {
+      EmeLogWindow.instance.appendLog({
+        timestamp: Date.now(),
+        type: TraceAnything.LogTypes.Setter,
+        className: 'SomeClass',
+        memberName: 'someMember',
+      });
+      expect(mockLogElement.querySelector('.title').textContent)
+          .toContain('SomeClass.someMember');
+    });
+
+    it('for events', () => {
+      EmeLogWindow.instance.appendLog({
+        timestamp: Date.now(),
+        type: TraceAnything.LogTypes.Event,
+        className: 'SomeClass',
+        eventName: 'someevent',
+      });
+      expect(mockLogElement.querySelector('.title').textContent)
+          .toContain('SomeClass someevent Event');
+    });
   });
 
-  it('builds data pairs', function() {
-    var data = {
-        title: 'Test Data',
-        names: ['Name 1', 'Name 2'],
-        values: ['Value 1', 'Value 2']
-    };
-    var expectedText = '    Name 1:  Value 1\n' +
-                       '    Name 2:  Value 2';
-    expect(emeLogConstructor.buildDataPairs(data, 0)).toEqual(expectedText);
-  });
+  describe('value formatting', () => {
+    beforeEach(() => {
+      EmeLogWindow.instance.open();
+    });
 
-  it('builds a formatted string from a undefined value', function() {
-    var result = emeLogConstructor.buildObjectItem(undefined, 0);
-    expect(result).toEqual('undefined');
-  });
+    function logResult(result) {
+      EmeLogWindow.instance.appendLog({
+        timestamp: Date.now(),
+        type: TraceAnything.LogTypes.Getter,
+        className: 'SomeClass',
+        memberName: 'someMember',
+        result,
+      });
+    }
 
-  it('builds a formatted string from a number', function() {
-    var result = emeLogConstructor.buildObjectItem(12345, 0);
-    expect(result).toEqual('12345');
-  });
+    // This matches the format used in function emeLogger() in
+    // eme-trace-config.js for serializing complex objects.  Emulate it here.
+    function fakeObjectWithType(type, fields=null, data=null) {
+      const obj = {
+        __type__: type,
+      };
 
-  it('builds a formatted string from a boolean', function() {
-    var result = emeLogConstructor.buildObjectItem(true, 0);
-    expect(result).toEqual('true');
-  });
+      // Used for most object types to encode the fields that we serialized and
+      // send between windows.
+      if (fields) {
+        obj.__fields__ = fields;
+      }
 
-  it('builds a formatted string from null', function() {
-    var result = emeLogConstructor.buildObjectItem(null, 0);
-    expect(result).toEqual('null');
-  });
+      // Used for ArrayBuffers and ArrayBufferViews like Uint8Array which encode
+      // an array of data.
+      if (data) {
+        obj.__data__ = data;
+      }
 
-  it('builds a formatted string from an array', function() {
-    var data = {
-        title: 'Array',
-        names: ['0', '1', '2'],
-        values: ['Value 0', 'Value 1', 'Value 2']
-    };
-    var expectedText = '[Value 0, Value 1, Value 2]';
-    var result = emeLogConstructor.buildObjectItem(data, 0);
-    expect(result).toEqual(expectedText);
-  });
+      return obj;
+    }
 
-   it('builds a formatted string from a Uint8Array', function() {
-    var data = {
-        title: 'Uint8Array',
-        names: ['0', '1', '2'],
-        values: [12, 34, 12, 65, 34, 634, 78, 324, 54, 23, 53]
-    };
-    var expectedText = '\n    12,34,12,65,34,634,78,324,54,23,53';
-    var result = emeLogConstructor.buildObjectItem(data, 0);
-    expect(result).toEqual(expectedText);
-  });
+    it('builds a formatted string from a undefined value', () => {
+      logResult(undefined);
+      expect(mockLogElement.querySelector('.data').textContent)
+          .toContain('=> undefined');
+    });
 
-  it('builds a formatted string from an Object', function() {
-    var data = {
-        title: 'Object',
-        names: ['persistantStateRequired'],
-        values: ['true']
-    };
-    var expectedText = '\n    persistantStateRequired:  true';
-    var result = emeLogConstructor.buildObjectItem(data, 0);
-    expect(result).toEqual(expectedText);
-  });
+    it('builds a formatted string from a number', () => {
+      logResult(12345);
+      expect(mockLogElement.querySelector('.data').textContent)
+          .toContain('=> 12345');
+    });
 
-  it('builds a formatted string from an Object with a type', function() {
-    var data = {
-        title: 'MediaKey',
-        names: ['keySystem'],
-        values: ['test.com']
-    };
-    var expectedText = '\n    MediaKey {\n' +
-                       '        keySystem:  test.com\n' +
-                       '    }';
-    var result = emeLogConstructor.buildObjectItem(data, 0);
-    expect(result).toEqual(expectedText);
+    it('builds a formatted string from a boolean', () => {
+      logResult(true);
+      expect(mockLogElement.querySelector('.data').textContent)
+          .toContain('=> true');
+    });
+
+    it('builds a formatted string from null', () => {
+      logResult(null);
+      expect(mockLogElement.querySelector('.data').textContent)
+          .toContain('=> null');
+    });
+
+    it('builds a formatted string from an array', () => {
+      const array = ['Value 0', 'Value 1', 'Value 2'];
+      logResult(array);
+
+      const text = mockLogElement.querySelector('.data').textContent;
+      expect(text).toContain('=> [\n');
+
+      const arrayText = text.split('=> ')[1];
+      expect(JSON5.parse(arrayText)).toEqual(array);
+    });
+
+    it('builds a formatted string from a Uint8Array', () => {
+      const array = [12, 34, 12, 65, 34, 634, 78, 324, 54, 23, 53];
+      logResult(fakeObjectWithType(
+          'Uint8Array', /* fields= */ null, /* data= */ array));
+
+      const text = mockLogElement.querySelector('.data').textContent;
+      expect(text).toContain('=> Uint8Array instance [\n');
+
+      const arrayText = text.split('=> Uint8Array instance ')[1];
+      expect(JSON5.parse(arrayText)).toEqual(array);
+    });
+
+    it('builds a formatted string from an Object', () => {
+      const object = {
+        persistantStateRequired: true,
+      };
+      logResult(object);
+
+      const text = mockLogElement.querySelector('.data').textContent;
+      expect(text).toContain('=> {\n');
+
+      const objectText = text.split('=> ')[1];
+      expect(JSON5.parse(objectText)).toEqual(object);
+    });
+
+    it('builds a formatted string from an Object with a type', () => {
+      const fields = {
+        keySystem: 'test.com',
+      };
+      const object = fakeObjectWithType('MediaKeys', fields);
+      logResult(object);
+
+      const text = mockLogElement.querySelector('.data').textContent;
+      expect(text).toContain('=> MediaKeys instance {\n');
+
+      const objectText = text.split('=> MediaKeys instance ')[1];
+      expect(JSON5.parse(objectText)).toEqual(fields);
+    });
   });
 });

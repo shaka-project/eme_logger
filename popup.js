@@ -19,12 +19,12 @@
 // When the user clicks the extension icon, open the EME log window.
 document.addEventListener('DOMContentLoaded', () => {
   const backgroundPage = chrome.extension.getBackgroundPage();
-  const emeLogConstructor = backgroundPage.emeLogConstructor;
+  const emeLogWindow = backgroundPage.EmeLogWindow.instance;
 
   // Without a small delay, it opens behind the current window.  Adding the
   // delay makes it a proper popup that takes focus.
   setTimeout(() => {
-    emeLogConstructor.openWindow();
+    emeLogWindow.open();
     window.close();
   }, 100);
 });

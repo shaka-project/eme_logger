@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Google Inc.
+ * Copyright 2021 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,13 @@
 
 describe('EME tracing', () => {
   beforeEach(() => {
-    spyOn(EmeListeners, 'logAndPostMessage_').and.callFake((log) => {
+    spyOn(window, 'emeLogger').and.callFake((log) => {
       // Validate that the logs can always be serialized.  We don't care about
       // the output at this level.
+      delete log.instance;
+
       try {
-        JSON.stringify(log);
+        JSON.stringify(prepLogForMessage(log));
       } catch (exception) {
         fail(exception);
       }
@@ -56,15 +58,13 @@ describe('EME tracing', () => {
       const mksa = await navigator.requestMediaKeySystemAccess(
           keySystem, minimalConfigs);
 
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+      expect(emeLogger).toHaveBeenCalledWith(
           jasmine.objectContaining({
-            'title': 'RequestMediaKeySystemAccessCall',
-            // NOTE: This is a bug.  The target is not wrapped in this case.
-            // But since I'm about to replace the internals, let's ignore it for
-            // now.
-            'target': navigator,
-            'keySystem': keySystem,
-            'supportedConfigurations': minimalConfigs,
+            'type': TraceAnything.LogTypes.Method,
+            'className': 'Navigator',
+            'methodName': 'requestMediaKeySystemAccess',
+            'args': [keySystem, minimalConfigs],
+            'result': mksa,
           }));
     });
   });
@@ -75,37 +75,31 @@ describe('EME tracing', () => {
     beforeEach(async () => {
       mksa = await navigator.requestMediaKeySystemAccess(
           keySystem, minimalConfigs);
-      EmeListeners.logAndPostMessage_.calls.reset();
+      emeLogger.calls.reset();
     });
 
     it('getConfiguration calls', async () => {
       const config = mksa.getConfiguration();
 
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+      expect(emeLogger).toHaveBeenCalledWith(
           jasmine.objectContaining({
-            'title': 'GetConfigurationCall',
-            'target': jasmine.objectContaining({
-              'title': 'MediaKeySystemAccess',
-            }),
-            'returned': config,
+            'type': TraceAnything.LogTypes.Method,
+            'className': 'MediaKeySystemAccess',
+            'methodName': 'getConfiguration',
+            'args': [],
+            'result': config,
           }));
     });
 
     it('createMediaKeys calls', async () => {
       const mediaKeys = await mksa.createMediaKeys();
 
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+      expect(emeLogger).toHaveBeenCalledWith(
           jasmine.objectContaining({
-            'title': 'CreateMediaKeysCall',
-            'target': jasmine.objectContaining({
-              'title': 'MediaKeySystemAccess',
-            }),
-            'returned': jasmine.any(Promise),
-          }));
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
-          jasmine.objectContaining({
-            'title': 'CreateMediaKeysCall Promise Result',
-            'status': 'resolved',
+            'type': TraceAnything.LogTypes.Method,
+            'className': 'MediaKeySystemAccess',
+            'methodName': 'createMediaKeys',
+            'args': [],
             'result': mediaKeys,
           }));
     });
@@ -118,23 +112,19 @@ describe('EME tracing', () => {
       const mksa = await navigator.requestMediaKeySystemAccess(
           keySystem, minimalConfigs);
       mediaKeys = await mksa.createMediaKeys();
-      EmeListeners.logAndPostMessage_.calls.reset();
+      emeLogger.calls.reset();
     });
 
     it('createSession calls', () => {
       const session = mediaKeys.createSession('temporary');
 
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+      expect(emeLogger).toHaveBeenCalledWith(
           jasmine.objectContaining({
-            'title': 'CreateSessionCall',
-            // NOTE: This is a bug.  The target is not wrapped in this case.
-            // But since I'm about to replace the internals, let's ignore it for
-            // now.
-            'target': mediaKeys,
-            'sessionType': 'temporary',
-            'returned': jasmine.objectContaining({
-              'title': 'MediaKeySession',
-            }),
+            'type': TraceAnything.LogTypes.Method,
+            'className': 'MediaKeys',
+            'methodName': 'createSession',
+            'args': ['temporary'],
+            'result': session,
           }));
     });
 
@@ -148,19 +138,13 @@ describe('EME tracing', () => {
       const serverCertificate = await response.arrayBuffer();
       await mediaKeys.setServerCertificate(serverCertificate);
 
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+      expect(emeLogger).toHaveBeenCalledWith(
           jasmine.objectContaining({
-            'title': 'SetServerCertificateCall',
-            // NOTE: This is a bug.  The target is not wrapped in this case.
-            // But since I'm about to replace the internals, let's ignore it for
-            // now.
-            'target': mediaKeys,
-            'serverCertificate': new Uint8Array(serverCertificate),
-          }));
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
-          jasmine.objectContaining({
-            'title': 'SetServerCertificateCall Promise Result',
-            'status': 'resolved',
+            'type': TraceAnything.LogTypes.Method,
+            'className': 'MediaKeys',
+            'methodName': 'setServerCertificate',
+            'args': [serverCertificate],
+            'result': true,
           }));
     });
   });
@@ -173,25 +157,19 @@ describe('EME tracing', () => {
           keySystem, minimalConfigs);
       const mediaKeys = await mksa.createMediaKeys();
       session = mediaKeys.createSession('temporary');
-      EmeListeners.logAndPostMessage_.calls.reset();
+      emeLogger.calls.reset();
     });
 
     it('generateRequest calls', async () => {
       await session.generateRequest('cenc', initData);
 
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+      expect(emeLogger).toHaveBeenCalledWith(
           jasmine.objectContaining({
-            'title': 'GenerateRequestCall',
-            'target': jasmine.objectContaining({
-              'title': 'MediaKeySession',
-            }),
-            'initDataType': 'cenc',
-            'initData': initData,
-          }));
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
-          jasmine.objectContaining({
-            'title': 'GenerateRequestCall Promise Result',
-            'status': 'resolved',
+            'type': TraceAnything.LogTypes.Method,
+            'className': 'MediaKeySession',
+            'methodName': 'generateRequest',
+            'args': ['cenc', initData],
+            'result': undefined,
           }));
     });
 
@@ -200,17 +178,13 @@ describe('EME tracing', () => {
         await session.load('fakeSessionId');
       } catch (exception) {}  // Will fail with a fake session ID; ignore it
 
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+      expect(emeLogger).toHaveBeenCalledWith(
           jasmine.objectContaining({
-            'title': 'LoadCall',
-            'target': jasmine.objectContaining({
-              'title': 'MediaKeySession',
-            }),
-          }));
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
-          jasmine.objectContaining({
-            'title': 'LoadCall Promise Result',
-            'status': 'rejected',
+            'type': TraceAnything.LogTypes.Method,
+            'className': 'MediaKeySession',
+            'methodName': 'load',
+            'args': ['fakeSessionId'],
+            'threw': jasmine.any(Error),
           }));
     });
 
@@ -220,18 +194,13 @@ describe('EME tracing', () => {
         await session.update(fakeLicenseResponse);
       } catch (exception) {} // Will fail with fake data; ignore it
 
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+      expect(emeLogger).toHaveBeenCalledWith(
           jasmine.objectContaining({
-            'title': 'UpdateCall',
-            'target': jasmine.objectContaining({
-              'title': 'MediaKeySession',
-            }),
-            'response': fakeLicenseResponse,
-          }));
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
-          jasmine.objectContaining({
-            'title': 'UpdateCall Promise Result',
-            'status': 'rejected',
+            'type': TraceAnything.LogTypes.Method,
+            'className': 'MediaKeySession',
+            'methodName': 'update',
+            'args': [fakeLicenseResponse],
+            'threw': jasmine.any(Error),
           }));
     });
 
@@ -240,17 +209,13 @@ describe('EME tracing', () => {
         await session.close();
       } catch (exception) {}  // Will fail due to invalid state; ignore it
 
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+      expect(emeLogger).toHaveBeenCalledWith(
           jasmine.objectContaining({
-            'title': 'CloseCall',
-            'target': jasmine.objectContaining({
-              'title': 'MediaKeySession',
-            }),
-          }));
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
-          jasmine.objectContaining({
-            'title': 'CloseCall Promise Result',
-            'status': 'rejected',
+            'type': TraceAnything.LogTypes.Method,
+            'className': 'MediaKeySession',
+            'methodName': 'close',
+            'args': [],
+            'threw': jasmine.any(Error),
           }));
     });
 
@@ -259,17 +224,13 @@ describe('EME tracing', () => {
         await session.remove();
       } catch (exception) {}  // Will fail due to invalid state; ignore it
 
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+      expect(emeLogger).toHaveBeenCalledWith(
           jasmine.objectContaining({
-            'title': 'RemoveCall',
-            'target': jasmine.objectContaining({
-              'title': 'MediaKeySession',
-            }),
-          }));
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
-          jasmine.objectContaining({
-            'title': 'RemoveCall Promise Result',
-            'status': 'rejected',
+            'type': TraceAnything.LogTypes.Method,
+            'className': 'MediaKeySession',
+            'methodName': 'remove',
+            'args': [],
+            'threw': jasmine.any(Error),
           }));
     });
 
@@ -277,21 +238,18 @@ describe('EME tracing', () => {
       session.dispatchEvent(new Event('message'));
       session.dispatchEvent(new Event('keystatuseschange'));
 
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+      expect(emeLogger).toHaveBeenCalledWith(
           jasmine.objectContaining({
-            'title': 'MessageEvent',
-            'target': jasmine.objectContaining({
-              'title': 'MediaKeySession',
-            }),
-            'event': jasmine.any(Event),
+            'type': TraceAnything.LogTypes.Event,
+            'className': 'MediaKeySession',
+            'eventName': 'message',
           }));
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+      expect(emeLogger).toHaveBeenCalledWith(
           jasmine.objectContaining({
-            'title': 'KeyStatusesChangeEvent',
-            'target': jasmine.objectContaining({
-              'title': 'MediaKeySession',
-            }),
-            'event': jasmine.any(Event),
+            'type': TraceAnything.LogTypes.Event,
+            'className': 'MediaKeySession',
+            'eventName': 'keystatuseschange',
+            'value': session.keyStatuses,
           }));
     });
   });
@@ -299,19 +257,22 @@ describe('EME tracing', () => {
   describe('logs HTML media elements', () => {
     var mediaElement;
 
-    beforeAll(() => {
+    beforeAll(async () => {
       // Make a real video element to log access to.
       mediaElement = document.createElement('video');
 
       // Set a tiny mp4 data URI as a source, so we can hit play.
       mediaElement.src = tinyMp4;
 
-      // Mute it and hide it visually.
+      // Mute it.
       mediaElement.muted = true;
-      mediaElement.style.display = 'none';
 
       // The element must be in the DOM to be discovered.
       document.body.appendChild(mediaElement);
+
+      // FIXME: Discovery is not working in this environment.  Why?  Is it still
+      // working in a normal page?
+      TraceAnything.scanDocumentForNewElements();
     });
 
     afterAll(() => {
@@ -324,35 +285,25 @@ describe('EME tracing', () => {
       const mediaKeys = await mksa.createMediaKeys();
       await mediaElement.setMediaKeys(mediaKeys);
 
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+      expect(emeLogger).toHaveBeenCalledWith(
           jasmine.objectContaining({
-            'title': 'SetMediaKeysCall',
-            'target': jasmine.objectContaining({
-              'title': 'HTMLVideoElement',
-            }),
-            'mediaKeys': mediaKeys,
-          }));
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
-          jasmine.objectContaining({
-            'title': 'SetMediaKeysCall Promise Result',
-            'status': 'resolved',
+            'type': TraceAnything.LogTypes.Method,
+            'className': 'HTMLVideoElement',
+            'methodName': 'setMediaKeys',
+            'args': [mediaKeys],
+            'result': undefined,
           }));
     });
 
     it('play calls', async () => {
       await mediaElement.play();
 
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+      expect(emeLogger).toHaveBeenCalledWith(
           jasmine.objectContaining({
-            'title': 'PlayCall',
-            'target': jasmine.objectContaining({
-              'title': 'HTMLVideoElement',
-            }),
-          }));
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
-          jasmine.objectContaining({
-            'title': 'PlayCall Promise Result',
-            'status': 'resolved',
+            'type': TraceAnything.LogTypes.Method,
+            'className': 'HTMLVideoElement',
+            'methodName': 'play',
+            'args': [],
           }));
     });
 
@@ -364,31 +315,33 @@ describe('EME tracing', () => {
       Object.defineProperty(mediaElement, 'error', {value: {code: 5}});
       mediaElement.dispatchEvent(new Event('error'));
 
-      mediaElement.dispatchEvent(new Event('encrypted'));
+      const encryptedEvent = new Event('encrypted');
+      encryptedEvent.initDataType = 'webm';
+      encryptedEvent.initData = new Uint8Array([1, 2, 3]);
+      mediaElement.dispatchEvent(encryptedEvent);
 
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+      expect(emeLogger).toHaveBeenCalledWith(
           jasmine.objectContaining({
-            'title': 'PlayEvent',
-            'target': jasmine.objectContaining({
-              'title': 'HTMLVideoElement',
-            }),
-            'event': jasmine.any(Event),
+            'type': TraceAnything.LogTypes.Event,
+            'className': 'HTMLVideoElement',
+            'eventName': 'play',
           }));
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+      expect(emeLogger).toHaveBeenCalledWith(
           jasmine.objectContaining({
-            'title': 'ErrorEvent',
-            'target': jasmine.objectContaining({
-              'title': 'HTMLVideoElement',
-            }),
-            'event': jasmine.any(Event),
+            'type': TraceAnything.LogTypes.Event,
+            'className': 'HTMLVideoElement',
+            'eventName': 'error',
+            'value': {code: 5},
           }));
-      expect(EmeListeners.logAndPostMessage_).toHaveBeenCalledWith(
+      expect(emeLogger).toHaveBeenCalledWith(
           jasmine.objectContaining({
-            'title': 'EncryptedEvent',
-            'target': jasmine.objectContaining({
-              'title': 'HTMLVideoElement',
+            'type': TraceAnything.LogTypes.Event,
+            'className': 'HTMLVideoElement',
+            'eventName': 'encrypted',
+            'event': jasmine.objectContaining({
+              'initDataType': 'webm',
+              'initData': new Uint8Array([1, 2, 3]),
             }),
-            'event': jasmine.any(Event),
           }));
     });
   });

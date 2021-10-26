@@ -2,7 +2,8 @@
   "devDependencies": {
     "chromedriver": "^95.0.0",
     "jasmine-browser-runner": "^0.9.0",
-    "jasmine-core": "^3.10.1"
+    "jasmine-core": "^3.10.1",
+    "json5": "^2.2.0"
   },
   "scripts": {
     "test": "jasmine-browser-runner runSpecs"
