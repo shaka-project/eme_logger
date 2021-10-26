@@ -19,9 +19,31 @@
 
 /**
  * A custom logger to plug into TraceAnything.
+ *
+ * @param {TraceAnything.Log} log
  */
 function emeLogger(log) {
-  // Log to the default logger in the JS console first.
+  // Hook into the EME formatter interface for update calls and message events.
+  if (log.type == TraceAnything.LogTypes.Method &&
+      log.className == 'MediaKeySession' &&
+      log.methodName == 'update' &&
+      log.args.length >= 1) {
+    log.args[0] = formatEmeLicense(log.args[0]);
+  } else if (log.type == TraceAnything.LogTypes.Event &&
+      log.className == 'MediaKeySession' &&
+      log.eventName == 'message') {
+    // You can't (and shouldn't, to avoid breaking the app) modify the event
+    // object here.  So clone it, and replace the message field of that.
+    log.event = {
+      // The spread operator reads the fields and values (shallow clone) of the
+      // object named here.
+      ...log.event,
+      // This overrides on of those fields with a new value.
+      message: formatEmeMessage(log.event.message),
+    };
+  }
+
+  // Log to the default logger in the JS console.
   TraceAnything.defaultLogger(log);
 
   // TODO: Discuss instances and properties with xhwang before finalizing
@@ -30,6 +52,50 @@ function emeLogger(log) {
   delete log.instance;
 
   window.postMessage({type: 'emeTraceLog', log: prepLogForMessage(log)}, '*');
+}
+
+/**
+ * @param {BufferSource} license
+ * @return {(string|BufferSource)}
+ */
+function formatEmeLicense(license) {
+  if (!license || !document.emeFormatters) {
+    return license;
+  }
+
+  for (const formatter of document.emeFormatters) {
+    try {
+      const licenseText = formatter.formatUpdateCall(license);
+      if (licenseText) {
+        return licenseText;
+      }
+    } catch (exception) {}  // Ignore, move on to the next formatter.
+  }
+
+  // Return the original license, which will be formatted as bytes.
+  return license;
+}
+
+/**
+ * @param {BufferSource} message
+ * @return {(string|BufferSource)}
+ */
+function formatEmeMessage(message) {
+  if (!document.emeFormatters) {
+    return message;
+  }
+
+  for (const formatter of document.emeFormatters) {
+    try {
+      const messageText = formatter.formatmessage(message);
+      if (messageText) {
+        return messageText;
+      }
+    } catch (exception) {}  // Ignore, move on to the next formatter.
+  }
+
+  // Return the original message, which will be formatted as bytes.
+  return message;
 }
 
 /**

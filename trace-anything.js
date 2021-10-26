@@ -825,9 +825,9 @@ TraceAnything.defaultLogger = (log) => {
     }
   } else if (log.type == TraceAnything.LogTypes.Event) {
     if (log.value) {
-      console.debug(`${logPrefix} =>`, log.value);
+      console.debug(logPrefix, log.event, '=>', log.value);
     } else {
-      console.debug(logPrefix);
+      console.debug(logPrefix, log.event);
     }
   }
 };
