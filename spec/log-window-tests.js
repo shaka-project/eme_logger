@@ -162,9 +162,44 @@ describe('Log window', () => {
         type: TraceAnything.LogTypes.Event,
         className: 'SomeClass',
         eventName: 'someevent',
+        event: fakeObjectWithType('Event', {type: 'someevent'}),
       });
       expect(mockLogElement.querySelector('.title').textContent)
           .toContain('SomeClass someevent Event');
+    });
+  });
+
+  describe('formats event data', () => {
+    beforeEach(() => {
+      EmeLogWindow.instance.open();
+    });
+
+    it('for events with falsey values', () => {
+      EmeLogWindow.instance.appendLog({
+        timestamp: Date.now(),
+        type: TraceAnything.LogTypes.Event,
+        className: 'SomeClass',
+        eventName: 'someevent',
+        event: fakeObjectWithType('Event', {type: 'someevent'}),
+        value: 0,
+      });
+      expect(mockLogElement.querySelector('.data').textContent)
+          .toContain('Associated value: 0');
+    });
+
+    it('for events that are not Event objects', () => {
+      EmeLogWindow.instance.appendLog({
+        timestamp: Date.now(),
+        type: TraceAnything.LogTypes.Event,
+        className: 'SomeClass',
+        eventName: 'someevent',
+        event: {},
+        value: 0,
+      });
+      expect(mockLogElement.querySelector('.data').textContent)
+          .toContain('SomeClass someevent Event instance');
+      expect(mockLogElement.querySelector('.data').textContent)
+          .toContain('Associated value: 0');
     });
   });
 
@@ -181,28 +216,6 @@ describe('Log window', () => {
         memberName: 'someMember',
         result,
       });
-    }
-
-    // This matches the format used in function emeLogger() in
-    // eme-trace-config.js for serializing complex objects.  Emulate it here.
-    function fakeObjectWithType(type, fields=null, data=null) {
-      const obj = {
-        __type__: type,
-      };
-
-      // Used for most object types to encode the fields that we serialized and
-      // send between windows.
-      if (fields) {
-        obj.__fields__ = fields;
-      }
-
-      // Used for ArrayBuffers and ArrayBufferViews like Uint8Array which encode
-      // an array of data.
-      if (data) {
-        obj.__data__ = data;
-      }
-
-      return obj;
     }
 
     it('builds a formatted string from a undefined value', () => {
@@ -279,4 +292,26 @@ describe('Log window', () => {
       expect(JSON5.parse(objectText)).toEqual(fields);
     });
   });
+
+  // This matches the format used in function emeLogger() in
+  // eme-trace-config.js for serializing complex objects.  Emulate it here.
+  function fakeObjectWithType(type, fields=null, data=null) {
+    const obj = {
+      __type__: type,
+    };
+
+    // Used for most object types to encode the fields that we serialized and
+    // send between windows.
+    if (fields) {
+      obj.__fields__ = fields;
+    }
+
+    // Used for ArrayBuffers and ArrayBufferViews like Uint8Array which encode
+    // an array of data.
+    if (data) {
+      obj.__data__ = data;
+    }
+
+    return obj;
+  }
 });

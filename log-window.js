@@ -190,9 +190,15 @@ class EmeLogWindow {
         data.textContent += ` => ${prettyPrint(log.value)}`;
       }
     } else if (log.type == 'Event') {
-      data.textContent = `${log.className} ${prettyPrint(log.event)}`;
-      if (log.value) {
-        data.textContent = 'Associated value: ' + prettyPrint(log.value);
+      data.textContent = `${log.className} `;
+      if (!log.event.__type__) {
+        // If the event object didn't properly inherit from Event, then we may
+        // be missing type info.  Construct it now with the event name.
+        data.textContent += `${log.eventName} Event instance `;
+      }
+      data.textContent += prettyPrint(log.event);
+      if ('value' in log) {
+        data.textContent += '\nAssociated value: ' + prettyPrint(log.value);
       }
     }
 

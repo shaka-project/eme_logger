@@ -374,6 +374,22 @@ describe('EME tracing', () => {
             'value': 2, /* playbackRate set above */
           }));
     });
+
+    it('events with falsey values', async () => {
+      // Should trigger a ratechange event with this value associated, even
+      // though the event name differs from the property name.
+      mediaElement.playbackRate = 0;
+
+      // A small delay for the ratechange event to fire.
+      await delay(0.5);
+
+      // Even though the associated value is falsey, we still log it.
+      expect(emeLogger).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'eventName': 'ratechange',
+            'value': 0, /* playbackRate set above */
+          }));
+    });
   });
 
   describe('logs MediaKeys created via MediaCapabilities', () => {
