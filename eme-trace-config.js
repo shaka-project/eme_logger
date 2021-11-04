@@ -259,20 +259,24 @@ const options = {
 TraceAnything.traceMember(navigator, 'requestMediaKeySystemAccess', options);
 TraceAnything.traceMember(
     navigator.mediaCapabilities, 'decodingInfo', combineOptions(options, {
-      // The result from decodingInfo is a plain object.  We need to dive into
-      // this field in particular to find MediaKeySystemAccess instances to
-      // trace.
-      exploreResultFields: ['keySystemAccess'],
-    }));
+  // The result from decodingInfo is a plain object.  We need to dive into
+  // this field in particular to find MediaKeySystemAccess instances to
+  // trace.
+  exploreResultFields: ['keySystemAccess'],
+}));
 
 // These constructors are not used directly, but this registers them to the
 // tracing system so that instances we find later will be shimmed.
 TraceAnything.traceClass(MediaKeys, options);
 TraceAnything.traceClass(MediaKeySystemAccess, options);
 TraceAnything.traceClass(MediaKeySession, combineOptions(options, {
-  // Also skip logging certain noisy properites on MediaKeySession.
   skipProperties: options.skipProperties.concat([
+    // Also skip logging certain noisy properites on MediaKeySession.
     'expiration',
+
+    // This is still logged in the representation of the session, but we don't
+    // need to log access to the property's getter.
+    'sessionId',
   ]),
 }));
 
@@ -287,6 +291,14 @@ const elementOptions = combineOptions(options, {
     'progress',
     'timeupdate',
   ],
+
+  // Methods we don't care about on media elements:
+  skipProperties: options.skipProperties.concat([
+    'getAttribute',
+    'getBoundingClientRect',
+    'querySelector',
+    'querySelectorAll',
+  ]),
 });
 TraceAnything.traceElement('video', elementOptions);
 TraceAnything.traceElement('audio', elementOptions);
