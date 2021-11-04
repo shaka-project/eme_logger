@@ -52,11 +52,14 @@ class TraceAnything {
 
       try {
         const original = new ctor(...args);
+        const traced = TraceAnything.traceObject(original, options);
+
+        log.instance = traced;
         log.result = original;
         log.duration = Date.now() - log.timestamp;
         options.logger(log);
 
-        return TraceAnything.traceObject(original, options);
+        return traced;
       } catch (error) {
         log.threw = error;
         log.duration = Date.now() - log.timestamp;
@@ -331,8 +334,8 @@ class TraceAnything {
       const log = {
         timestamp: Date.now(),
         type: TraceAnything.LogTypes.Method,
-        className,
         instance: this,
+        className,
         methodName: k,
         args,
       };
@@ -480,6 +483,7 @@ class TraceAnything {
             timestamp: Date.now(),
             duration: 0,
             type: TraceAnything.LogTypes.Setter,
+            instance: traced,
             className,
             memberName: k,
             value,
@@ -495,6 +499,7 @@ class TraceAnything {
           const log = {
             timestamp: Date.now(),
             type: TraceAnything.LogTypes.Getter,
+            instance: traced,
             className,
             memberName: k,
           };
@@ -520,6 +525,7 @@ class TraceAnything {
           const log = {
             timestamp: Date.now(),
             type: TraceAnything.LogTypes.Setter,
+            instance: traced,
             className,
             memberName: k,
           };
@@ -560,6 +566,7 @@ class TraceAnything {
         timestamp: Date.now(),
         duration: 0,
         type: TraceAnything.LogTypes.Event,
+        instance: traced,
         className,
         eventName: `${k} Promise resolved`,
         event: {
@@ -572,6 +579,7 @@ class TraceAnything {
         timestamp: Date.now(),
         duration: 0,
         type: TraceAnything.LogTypes.Event,
+        instance: traced,
         className,
         eventName: `${k} Promise rejected`,
         event: {
@@ -736,6 +744,7 @@ class TraceAnything {
         timestamp: Date.now(),
         duration: 0,
         type: TraceAnything.LogTypes.Event,
+        instance: traced,
         className,
         eventName,
         event,
@@ -829,6 +838,7 @@ TraceAnything.LogTypes = {
  *   timestamp: Number,
  *   duration: Number,
  *   type: TraceAnything.LogTypes,
+ *   instance: (!Object|undefined),
  *   message: (string|undefined),
  *   className: (string|undefined),
  *   methodName: (string|undefined),
@@ -848,6 +858,8 @@ TraceAnything.LogTypes = {
  *   events or warnings.
  * @property {TraceAnything.LogTypes} type
  *   The type of log.
+ * @property {(!Object|undefined)} instance
+ *   The instance on which this method call / getter / setter / event occurred.
  * @property {(string|undefined)} message
  *   A message for Warning-type logs.
  * @property {(string|undefined)} className
