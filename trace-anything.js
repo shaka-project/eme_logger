@@ -43,10 +43,11 @@ class TraceAnything {
     TraceAnything._shimmedClasses.set(ctor, options);
 
     return function(...args) {
+      const className = ctor.name;
       const log = {
         timestamp: Date.now(),
         type: TraceAnything.LogTypes.Constructor,
-        className: ctor.name,
+        className,
         args,
       };
 
@@ -55,6 +56,7 @@ class TraceAnything {
         const traced = TraceAnything.traceObject(original, options);
 
         log.instance = traced;
+        log.instanceId = TraceAnything._getId(traced, className, options);
         log.result = original;
         log.duration = Date.now() - log.timestamp;
         options.logger(log);
@@ -88,6 +90,7 @@ class TraceAnything {
     }
 
     const ctor = Object.getPrototypeOf(object).constructor;
+    const className = ctor.name;
     const traced = options.inPlace ? object : {};
 
     // A list of all property names.
@@ -116,7 +119,7 @@ class TraceAnything {
         continue;
       }
 
-      TraceAnything._shimMember(traced, object, k, ctor.name, options);
+      TraceAnything._shimMember(traced, object, k, className, options);
     }
 
     traced.__TraceAnythingEvents__ = new Set();
@@ -125,7 +128,7 @@ class TraceAnything {
       // Shim any "on" event listener properties.
       for (const k of allProperties.filter((k) => k.startsWith('on'))) {
         TraceAnything._shimEventListenerProperty(
-            traced, object, k, ctor.name, options);
+            traced, object, k, className, options);
       }
 
       // If there's an addEventListener method, we will use that to discover
@@ -133,7 +136,7 @@ class TraceAnything {
       // property.
       if (object.addEventListener) {
         TraceAnything._shimEventListenersDynamically(
-            traced, object, ctor.name, options);
+            traced, object, className, options);
       }
     }
 
@@ -147,7 +150,7 @@ class TraceAnything {
       traced.__TraceAnythingEvents__.add(eventName);
 
       const listener = TraceAnything._shimEventListener(
-          object, () => {}, ctor.name, eventName, options);
+          object, () => {}, className, eventName, options);
       traced.addEventListener(eventName, listener);
     }
 
@@ -158,6 +161,14 @@ class TraceAnything {
 
     // Make sure we can tell later what is shimmed already.
     traced.__TraceAnything__ = true;
+
+    // We ignore the return value, but this has the side-effect of setting the
+    // generated ID on "traced".  This call ensures that when we log this
+    // object as a return value, its ID will show up in the logs and can be
+    // correlated to later calls where it is the instance on which methods or
+    // events are logged.  Also, this is done after all the shims are
+    // installed, so that we don't shim the auto-generated ID property.
+    TraceAnything._getId(traced, className, options);
 
     return traced;
   }
@@ -335,6 +346,7 @@ class TraceAnything {
         timestamp: Date.now(),
         type: TraceAnything.LogTypes.Method,
         instance: this,
+        instanceId: TraceAnything._getId(this, className, options),
         className,
         methodName: k,
         args,
@@ -361,13 +373,15 @@ class TraceAnything {
 
           const promiseShim = new Promise((resolve, reject) => {
             returnValue.then((asyncValue) => {
+              asyncValue = TraceAnything._shimReturnValue(asyncValue, options);
+
               if (!options.logAsyncResultsImmediately) {
                 log.result = asyncValue;
                 log.duration = Date.now() - log.timestamp;
                 options.logger(log);
               }
 
-              resolve(TraceAnything._shimReturnValue(asyncValue, options));
+              resolve(asyncValue);
             }, (error) => {
               if (!options.logAsyncResultsImmediately) {
                 delete log.result;
@@ -484,6 +498,7 @@ class TraceAnything {
             duration: 0,
             type: TraceAnything.LogTypes.Setter,
             instance: traced,
+            instanceId: TraceAnything._getId(traced, className, options),
             className,
             memberName: k,
             value,
@@ -500,6 +515,7 @@ class TraceAnything {
             timestamp: Date.now(),
             type: TraceAnything.LogTypes.Getter,
             instance: traced,
+            instanceId: TraceAnything._getId(traced, className, options),
             className,
             memberName: k,
           };
@@ -526,6 +542,7 @@ class TraceAnything {
             timestamp: Date.now(),
             type: TraceAnything.LogTypes.Setter,
             instance: traced,
+            instanceId: TraceAnything._getId(traced, className, options),
             className,
             memberName: k,
           };
@@ -567,6 +584,7 @@ class TraceAnything {
         duration: 0,
         type: TraceAnything.LogTypes.Event,
         instance: traced,
+        instanceId: TraceAnything._getId(traced, className, options),
         className,
         eventName: `${k} Promise resolved`,
         event: {
@@ -580,6 +598,7 @@ class TraceAnything {
         duration: 0,
         type: TraceAnything.LogTypes.Event,
         instance: traced,
+        instanceId: TraceAnything._getId(traced, className, options),
         className,
         eventName: `${k} Promise rejected`,
         event: {
@@ -745,6 +764,7 @@ class TraceAnything {
         duration: 0,
         type: TraceAnything.LogTypes.Event,
         instance: traced,
+        instanceId: TraceAnything._getId(traced, className, options),
         className,
         eventName,
         event,
@@ -817,6 +837,26 @@ class TraceAnything {
     }
     return null;
   }
+
+  /**
+   * @param {!Object} traced The traced object.
+   * @param {string} className The class name.
+   * @param {TraceAnything.Options} options
+   * @return {string} The existing or newly-auto-generated ID for the object.
+   * @private
+   */
+  static _getId(traced, className, options) {
+    if (options.idProperty && options.idProperty in traced) {
+      return traced[options.idProperty];
+    }
+
+    if (traced.__TraceAnythingId__ == null) {
+      let id = TraceAnything._nextGeneratedId.get(className) || 1;
+      TraceAnything._nextGeneratedId.set(className, id + 1);
+      traced.__TraceAnythingId__ = className + '_' + id;
+    }
+    return traced.__TraceAnythingId__;
+  }
 }
 
 /**
@@ -839,6 +879,7 @@ TraceAnything.LogTypes = {
  *   duration: Number,
  *   type: TraceAnything.LogTypes,
  *   instance: (!Object|undefined),
+ *   instanceId: (string|undefined),
  *   message: (string|undefined),
  *   className: (string|undefined),
  *   methodName: (string|undefined),
@@ -860,6 +901,9 @@ TraceAnything.LogTypes = {
  *   The type of log.
  * @property {(!Object|undefined)} instance
  *   The instance on which this method call / getter / setter / event occurred.
+ * @property {(string|undefined)} instanceId
+ *   The instance ID.  May be auto-generated for some types.
+ *   See TraceAnything.Options.idProperty.
  * @property {(string|undefined)} message
  *   A message for Warning-type logs.
  * @property {(string|undefined)} className
@@ -894,7 +938,7 @@ TraceAnything.defaultLogger = (log) => {
   // NOTE: We are not combining everything into a single string in the default
   // logger, because the JS console is actually capable of printing complex
   // values like objects and arrays.
-  let logPrefix = 'TraceAnything: ';
+  let logPrefix = `TraceAnything: (ID ${log.instanceId}) `;
 
   if (log.type == TraceAnything.LogTypes.Warning) {
     console.warn(logPrefix + log.message);
@@ -1033,6 +1077,11 @@ TraceAnything.defaultLogger = (log) => {
  *   static once logged.  This also makes the duration of a log reflect the time
  *   spent waiting for the Promise to be resolved or rejected.
  *   By default, true.
+ * @property {string} idProperty
+ *   The name of a property to use to identify instances in the logs.  If null,
+ *   or if the associated property does not exist on the object, TraceAnything
+ *   will generate an ID automatically.
+ *   By default, "id".
  */
 TraceAnything.Options;
 
@@ -1057,6 +1106,7 @@ TraceAnything.defaultOptions = {
   exploreResultFields: [],
   logger: TraceAnything.defaultLogger,
   logAsyncResultsImmediately: true,
+  idProperty: "id",
 };
 
 /**
@@ -1080,3 +1130,12 @@ TraceAnything._tracedElementNames = new Map();
  * @private {MutationObserver}
  */
 TraceAnything._newElementObserver = null;
+
+/**
+ * The next ID for objects which need an ID generated for the logs.
+ * ID numbers are per-type, and the map is indexed by type name.
+ * See also TraceAnything.Options.idProperty and TraceAnything.Log.instanceId.
+ *
+ * @private {Map<string, number>}
+ */
+TraceAnything._nextGeneratedId = new Map();

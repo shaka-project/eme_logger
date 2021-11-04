@@ -46,8 +46,6 @@ function emeLogger(log) {
   // Log to the default logger in the JS console.
   TraceAnything.defaultLogger(log);
 
-  // TODO: Discuss instances and properties with xhwang before finalizing
-
   // This is not needed and can't be easily serialized.
   delete log.instance;
 
@@ -210,10 +208,14 @@ function getSerializable(obj) {
   // Clone the fields of an object into serializable versions.
   const clone = {};
   for (const k in obj) {
-    if (k == '__TraceAnything__' || typeof obj[k] == 'function') {
+    if (k.startsWith('__TraceAnything') || typeof obj[k] == 'function') {
       continue;
     }
     clone[k] = getSerializable(obj[k]);
+  }
+  // Make sure generated IDs get logged.  Do this through a synthetic field.
+  if ('__TraceAnythingId__' in obj && !('id' in clone)) {
+    clone.autoId = obj.__TraceAnythingId__;
   }
   if (obj.constructor != Object) {
     // If it's an object with a type, send that info, too.
@@ -270,6 +272,8 @@ TraceAnything.traceMember(
 TraceAnything.traceClass(MediaKeys, options);
 TraceAnything.traceClass(MediaKeySystemAccess, options);
 TraceAnything.traceClass(MediaKeySession, combineOptions(options, {
+  idProperty: 'sessionId',
+
   skipProperties: options.skipProperties.concat([
     // Also skip logging certain noisy properites on MediaKeySession.
     'expiration',
