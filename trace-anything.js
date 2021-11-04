@@ -105,6 +105,8 @@ class TraceAnything {
     }
 
     for (const k of allProperties) {
+      // TODO: This "on" discovery mechanism can cover up non-event properties
+      // that start with "on", such as Navigator.onLine.
       if (k.startsWith('on') && options.events) {
         // If we shim event listeners separately, ignore this event listener
         // property at this stage.
@@ -114,11 +116,21 @@ class TraceAnything {
       TraceAnything._shimMember(traced, object, k, ctor.name, options);
     }
 
+    traced.__TraceAnythingEvents__ = new Set();
+
     if (options.events) {
       // Shim any "on" event listener properties.
       for (const k of allProperties.filter((k) => k.startsWith('on'))) {
         TraceAnything._shimEventListenerProperty(
             traced, object, k, ctor.name, options);
+      }
+
+      // If there's an addEventListener method, we will use that to discover
+      // events the app is listening for that may not have a corresponding "on"
+      // property.
+      if (object.addEventListener) {
+        TraceAnything._shimEventListenersDynamically(
+            traced, object, ctor.name, options);
       }
     }
 
@@ -127,6 +139,10 @@ class TraceAnything {
     // not be used by the application.  This also allows the user to request
     // certain explicit events without tracing all events.
     for (const eventName in options.extraEvents) {
+      // Since we may be shimming addEventListener, add this event to the set
+      // before setting the listener.
+      traced.__TraceAnythingEvents__.add(eventName);
+
       const listener = TraceAnything._shimEventListener(
           object, () => {}, ctor.name, eventName, options);
       traced.addEventListener(eventName, listener);
@@ -615,6 +631,8 @@ class TraceAnything {
       return;
     }
 
+    traced.__TraceAnythingEvents__.add(eventName);
+
     const originalDescriptor = TraceAnything._getDescriptor(object, k);
     console.assert(originalDescriptor != null);
 
@@ -651,6 +669,35 @@ class TraceAnything {
     // Set the old listener again (which may be null or undefined) to shim it
     // right away.
     traced[k] = oldListener;
+  }
+
+  /**
+   * Add our own event listeners dynamically when the app adds listeners for
+   * events we don't know about yet.
+   *
+   * @param {!Object} traced The traced object.
+   * @param {!Object} object The original object.
+   * @param {string} className The class name.
+   * @param {TraceAnything.Options} options
+   * @private
+   */
+  static _shimEventListenersDynamically(traced, object, className, options) {
+    const originalMethod = object.addEventListener;
+
+    // Set a shim method that tracks any newly discovered events and adds
+    // listeners for them.
+    traced.addEventListener = function(eventName, ...args) {
+      if (!traced.__TraceAnythingEvents__.has(eventName) &&
+          !options.skipEvents.includes(eventName)) {
+        traced.__TraceAnythingEvents__.add(eventName);
+
+        const listener = TraceAnything._shimEventListener(
+            traced, () => {}, className, eventName, options);
+        originalMethod.call(this, eventName, listener);
+      }
+
+      return originalMethod.call(this, eventName, ...args);
+    }
   }
 
   /**
@@ -933,7 +980,8 @@ TraceAnything.defaultLogger = (log) => {
  *   setters, or methods to be suppressed, while still tracing events generally.
  *   By default, empty.
  * @property {boolean} events
- *   Shim all events with "on" properties.
+ *   Shim all events.  Events with "on" properties and events listened to by the
+ *   application will be discovered automatically.
  *   By default, true.
  * @property {!Array<string>} extraEvents
  *   Add explicit event listeners for these events.  This allows tracing of
