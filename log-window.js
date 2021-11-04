@@ -267,9 +267,14 @@ function prettyPrint(obj, indentation = '') {
   }
 
   if (Array.isArray(obj)) {
+    // More compact representations for empty or 1-element arrays.
     if (obj.length == 0) {
       return '[]';
     }
+    if (obj.length == 1) {
+      return `[${prettyPrint(obj[0], indentation)}]`;
+    }
+
     let insides = '';
     for (const entry of obj) {
       insides += indentation + '  ';
@@ -280,9 +285,15 @@ function prettyPrint(obj, indentation = '') {
 
   if (obj.constructor == Object) {
     const keys = Object.keys(obj);
+
+    // More compact representations for empty or 1-element objects.
     if (keys.length == 0) {
       return '{}';
     }
+    if (keys.length == 1) {
+      return `{${keys[0]}: ${prettyPrint(obj[keys[0]], indentation)}}`;
+    }
+
     let insides = '';
     for (const key of keys) {
       insides += indentation + '  ' + key + ': ';

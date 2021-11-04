@@ -253,6 +253,17 @@ describe('Log window', () => {
       expect(JSON5.parse(arrayText)).toEqual(array);
     });
 
+    it('builds a compact formatted string from a 1-element array', () => {
+      const array = ['abc'];
+      logResult(array);
+
+      const text = mockLogElement.querySelector('.data').textContent;
+      expect(text).toContain('=> ["abc"]');
+
+      const arrayText = text.split('=> ')[1];
+      expect(JSON5.parse(arrayText)).toEqual(array);
+    });
+
     it('builds a formatted string from a Uint8Array', () => {
       const array = [12, 34, 12, 65, 34, 634, 78, 324, 54, 23, 53];
       logResult(fakeObjectWithType(
@@ -267,7 +278,8 @@ describe('Log window', () => {
 
     it('builds a formatted string from an Object', () => {
       const object = {
-        persistantStateRequired: true,
+        persistentState: 'required',
+        distinctiveIdentifier: 'required',
       };
       logResult(object);
 
@@ -278,17 +290,31 @@ describe('Log window', () => {
       expect(JSON5.parse(objectText)).toEqual(object);
     });
 
-    it('builds a formatted string from an Object with a type', () => {
-      const fields = {
-        keySystem: 'test.com',
+    it('builds a compact formatted string from a 1-field Object', () => {
+      const object = {
+        keySystem: 'com.widevine.alpha',
       };
-      const object = fakeObjectWithType('MediaKeys', fields);
       logResult(object);
 
       const text = mockLogElement.querySelector('.data').textContent;
-      expect(text).toContain('=> MediaKeys instance {\n');
+      expect(text).toContain('=> {keySystem: "com.widevine.alpha"}');
 
-      const objectText = text.split('=> MediaKeys instance ')[1];
+      const objectText = text.split('=> ')[1];
+      expect(JSON5.parse(objectText)).toEqual(object);
+    });
+
+    it('builds a formatted string from an Object with a type', () => {
+      const fields = {
+        sessionId: 'abc',
+        expiration: Infinity,
+      };
+      const object = fakeObjectWithType('MediaKeySession', fields);
+      logResult(object);
+
+      const text = mockLogElement.querySelector('.data').textContent;
+      expect(text).toContain('=> MediaKeySession instance {\n');
+
+      const objectText = text.split('=> MediaKeySession instance ')[1];
       expect(JSON5.parse(objectText)).toEqual(fields);
     });
   });
