@@ -317,11 +317,24 @@ describe('EME tracing', () => {
       encryptedEvent.initData = new Uint8Array([1, 2, 3]);
       mediaElement.dispatchEvent(encryptedEvent);
 
+      // Should trigger a ratechange event with this value associated, even
+      // though the event name differs from the property name.
+      mediaElement.playbackRate = 2;
+
+      // A small delay for the ratechange event to fire.
+      await delay(0.5);
+
       expect(emeLogger).toHaveBeenCalledWith(
           jasmine.objectContaining({
             'type': TraceAnything.LogTypes.Event,
             'className': 'HTMLVideoElement',
             'eventName': 'play',
+            // Playback events have multiple values associated:
+            'value': jasmine.objectContaining({
+              'currentTime': jasmine.any(Number),
+              'paused': jasmine.any(Boolean),
+              'ended': jasmine.any(Boolean),
+            }),
           }));
       expect(emeLogger).toHaveBeenCalledWith(
           jasmine.objectContaining({
@@ -339,6 +352,13 @@ describe('EME tracing', () => {
               'initDataType': 'webm',
               'initData': new Uint8Array([1, 2, 3]),
             }),
+          }));
+      expect(emeLogger).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            'type': TraceAnything.LogTypes.Event,
+            'className': 'HTMLVideoElement',
+            'eventName': 'ratechange',
+            'value': 2, /* playbackRate set above */
           }));
     });
   });
@@ -404,4 +424,8 @@ describe('EME tracing', () => {
           }));
     });
   });
+
+  async function delay(seconds) {
+    await new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+  }
 });

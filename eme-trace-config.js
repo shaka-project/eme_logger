@@ -281,6 +281,11 @@ TraceAnything.traceClass(MediaKeySession, combineOptions(options, {
 }));
 
 // Trace media element types, and monitor the document for new instances.
+const playbackStateProperties = [
+  'currentTime',
+  'paused',
+  'ended',
+];
 const elementOptions = combineOptions(options, {
   // Skip all property access on media elements.
   // It's a little noisy and unhelpful (currentTime getter, for example).
@@ -299,6 +304,15 @@ const elementOptions = combineOptions(options, {
     'querySelector',
     'querySelectorAll',
   ]),
+
+  eventProperties: {
+    'ratechange': 'playbackRate',
+    'resize': 'getBoundingClientRect',
+    'play': playbackStateProperties,
+    'playing': playbackStateProperties,
+    'pause': playbackStateProperties,
+    'ended': playbackStateProperties,
+  },
 });
 TraceAnything.traceElement('video', elementOptions);
 TraceAnything.traceElement('audio', elementOptions);

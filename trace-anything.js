@@ -642,7 +642,7 @@ class TraceAnything {
   /**
    * Shim an event listener for tracing.
    *
-   * @param {!Object} object The traced object.
+   * @param {!Object} traced The traced object.
    * @param {function} listener The event listener.
    * @param {string} k The member name.
    * @param {string} className The class name.
@@ -651,16 +651,21 @@ class TraceAnything {
    * @return {function} A shim for the event listener which logs events.
    * @private
    */
-  static _shimEventListener(object, listener, className, eventName, options) {
+  static _shimEventListener(traced, listener, className, eventName, options) {
     // If this event corresponds to a change in a specific property, try to
     // find it now.  Then we can log the specific value it has in the listener.
     let correspondingPropertyName = null;
-    const canonicalEventName = eventName.toLowerCase();
-    const lowerCasePropertyName = canonicalEventName.replace(/change$/, '');
-    for (const k in object) {
-      if (k.toLowerCase() == lowerCasePropertyName) {
-        correspondingPropertyName = k;
-        break;
+
+    if (eventName in options.eventProperties) {
+      correspondingPropertyName = options.eventProperties[eventName];
+    } else {
+      const canonicalEventName = eventName.toLowerCase();
+      const lowerCasePropertyName = canonicalEventName.replace(/change$/, '');
+      for (const k in traced) {
+        if (k.toLowerCase() == lowerCasePropertyName) {
+          correspondingPropertyName = k;
+          break;
+        }
       }
     }
 
@@ -673,9 +678,20 @@ class TraceAnything {
         eventName,
         event,
       };
-      if (correspondingPropertyName) {
-        log.value = object[correspondingPropertyName];
+
+      // The corresponding property may be an array of multiple properties
+      // which should be logged with this event.  If so, create an Object
+      // mapping names to values.
+      if (Array.isArray(correspondingPropertyName)) {
+        log.value = {};
+        for (const name of correspondingPropertyName) {
+          log.value[name] = TraceAnything._extractProperty(traced, name);
+        }
+      } else if (correspondingPropertyName) {
+        log.value = TraceAnything._extractProperty(
+            traced, correspondingPropertyName);
       }
+
       options.logger(log);
 
       // This supports the EventListener interface, in which "listener" could be
@@ -686,6 +702,26 @@ class TraceAnything {
         return listener.call(this, event);
       }
     };
+  }
+
+  /**
+   * Extract a single property value from an object by name.
+   *
+   * @param {!Object} object The object from which to extract the value.
+   * @param {string} name The name of the property.  If the property is a
+   *   method, the method will be called to get the value.
+   * @return {?} The extracted value, which could be anything.
+   * @private
+   */
+  static _extractProperty(object, name) {
+    const value = object[name];
+
+    // If the property is a method, call it now.
+    if (value instanceof Function) {
+      return value.call(object);
+    } else {
+      return value;
+    }
   }
 
   /**
@@ -889,6 +925,15 @@ TraceAnything.defaultLogger = (log) => {
  *   Skip event listeners for these events.  This allows certain noisy events
  *   to be suppressed, while still tracing events generally.
  *   By default, empty.
+ * @property {!Object<string, (string|!Array<string>)>} eventProperties
+ *   A map of event names to their associated properties.  If a property matches
+ *   an event name (case-insensitive, with "change" removed from the event
+ *   name), its value will be logged with the event automatically.  This
+ *   configuration allows values to be associated with an event if the property
+ *   name differs from the event name.  An array of property names can also be
+ *   used.  If a property name refers to a method, the method will be called and
+ *   its return value will be logged.
+ *   By default, empty.
  * @property {!Array<string>} exploreResultFields
  *   Explore specific fields of the results of a method.  This allows tracing
  *   into return values that are plain objects.
@@ -924,6 +969,7 @@ TraceAnything.defaultOptions = {
   events: true,
   extraEvents: [],
   skipEvents: [],
+  eventProperties: {},
   exploreResultFields: [],
   logger: TraceAnything.defaultLogger,
   logAsyncResultsImmediately: true,
