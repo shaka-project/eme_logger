@@ -53,11 +53,13 @@ class TraceAnything {
       try {
         const original = new ctor(...args);
         log.result = original;
+        log.duration = Date.now() - log.timestamp;
         options.logger(log);
 
         return TraceAnything.traceObject(original, options);
       } catch (error) {
         log.threw = error;
+        log.duration = Date.now() - log.timestamp;
         options.logger(log);
         throw error;
       }
@@ -322,6 +324,7 @@ class TraceAnything {
       try {
         const returnValue = originalMethod.apply(this, args);
         log.result = returnValue;
+        log.duration = Date.now() - log.timestamp;
 
         if (returnValue == null) {
           // If this is null, it's not a Promise.  Return the value right away.
@@ -341,6 +344,7 @@ class TraceAnything {
             returnValue.then((asyncValue) => {
               if (!options.logAsyncResultsImmediately) {
                 log.result = asyncValue;
+                log.duration = Date.now() - log.timestamp;
                 options.logger(log);
               }
 
@@ -349,6 +353,7 @@ class TraceAnything {
               if (!options.logAsyncResultsImmediately) {
                 delete log.result;
                 log.threw = error;
+                log.duration = Date.now() - log.timestamp;
                 options.logger(log);
               }
 
@@ -364,6 +369,7 @@ class TraceAnything {
       } catch (error) {
         delete log.result;
         log.threw = error;
+        log.duration = Date.now() - log.timestamp;
         options.logger(log);
         throw error;
       }
@@ -430,6 +436,7 @@ class TraceAnything {
     if (options.inPlace && !originalDescriptor.configurable) {
       options.logger({
         timestamp: Date.now(),
+        duration: 0,
         type: TraceAnything.LogTypes.Warning,
         message: `Unable to trace ${k} on ${className} in-place!`,
       });
@@ -455,6 +462,7 @@ class TraceAnything {
         newDescriptor.set = (value) => {
           options.logger({
             timestamp: Date.now(),
+            duration: 0,
             type: TraceAnything.LogTypes.Setter,
             className,
             memberName: k,
@@ -478,11 +486,13 @@ class TraceAnything {
           try {
             const value = originalDescriptor.get.call(this);
             log.result = value;
+            log.duration = Date.now() - log.timestamp;
             options.logger(log);
 
             return value;
           } catch (error) {
             log.threw = error;
+            log.duration = Date.now() - log.timestamp;
             options.logger(log);
             throw error;
           }
@@ -501,9 +511,11 @@ class TraceAnything {
           try {
             originalDescriptor.set.call(this, value);
             log.value = value;
+            log.duration = Date.now() - log.timestamp;
             options.logger(log);
           } catch (error) {
             log.threw = error;
+            log.duration = Date.now() - log.timestamp;
             options.logger(log);
             throw error;
           }
@@ -530,6 +542,7 @@ class TraceAnything {
     promise.then((result) => {
       const log = {
         timestamp: Date.now(),
+        duration: 0,
         type: TraceAnything.LogTypes.Event,
         className,
         eventName: `${k} Promise resolved`,
@@ -541,6 +554,7 @@ class TraceAnything {
     }, (error) => {
       const log = {
         timestamp: Date.now(),
+        duration: 0,
         type: TraceAnything.LogTypes.Event,
         className,
         eventName: `${k} Promise rejected`,
@@ -673,6 +687,7 @@ class TraceAnything {
     return function(event) {
       const log = {
         timestamp: Date.now(),
+        duration: 0,
         type: TraceAnything.LogTypes.Event,
         className,
         eventName,
@@ -765,6 +780,7 @@ TraceAnything.LogTypes = {
 /**
  * @typedef {{
  *   timestamp: Number,
+ *   duration: Number,
  *   type: TraceAnything.LogTypes,
  *   message: (string|undefined),
  *   className: (string|undefined),
@@ -777,8 +793,12 @@ TraceAnything.LogTypes = {
  *   value: (?|undefined)
  * }}
  * @property {Number} timestamp
- *   A timestamp in milliseconds since 1970, UTC.  Suitable for use in the Date
- *   constructor in JavaScript.
+ *   A timestamp of when the call was made, in milliseconds since 1970, UTC.
+ *   Suitable for use in the Date constructor in JavaScript.
+ * @property {Number} duration
+ *   The duration of this call in milliseconds.  This is particularly useful
+ *   information for async methods.  The value may be 0 for some types, such as
+ *   events or warnings.
  * @property {TraceAnything.LogTypes} type
  *   The type of log.
  * @property {(string|undefined)} message
@@ -945,10 +965,14 @@ TraceAnything.defaultLogger = (log) => {
  * @property {boolean} logAsyncResultsImmediately
  *   If true, log the returned Promise from an async method immediately.  This
  *   can be sensible when logging to a JavaScript console, as the live object
- *   can be inspected later when it has a value.
+ *   can be inspected later when it has a value.  This means that the duration
+ *   of a log would only reflect the time spent getting a Promise back from the
+ *   method.
  *   If false, wait for the Promise to be resolved or rejected before logging.
  *   This is more useful when logging pure text, since the output becomes
- *   static once logged.
+ *   static once logged.  This also makes the duration of a log reflect the time
+ *   spent waiting for the Promise to be resolved or rejected.
+ *   By default, true.
  */
 TraceAnything.Options;
 

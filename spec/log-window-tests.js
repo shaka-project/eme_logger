@@ -80,6 +80,16 @@ describe('Log window', () => {
         .toContain('1969-07-20 12:34:56');
   });
 
+  it('logs with durations', () => {
+    EmeLogWindow.instance.open();
+    EmeLogWindow.instance.appendLog({
+      timestamp: Date.now(),
+      duration: 15,
+    });
+    expect(mockLogElement.querySelector('h3').textContent)
+        .toContain('duration: 15.0 ms');
+  });
+
   it('shows warnings', () => {
     EmeLogWindow.instance.open();
     EmeLogWindow.instance.appendLog({
@@ -90,8 +100,8 @@ describe('Log window', () => {
 
     expect(mockLogElement.querySelector('.title').textContent)
         .toContain('WARNING');
-    expect(mockLogElement.querySelector('.title').style.color)
-        .toBe('red');
+    expect(mockLogElement.querySelector('.title').classList.contains('warning'))
+        .toBe(true);
     expect(mockLogElement.querySelector('.data').textContent)
         .toContain('Oh no!');
   });

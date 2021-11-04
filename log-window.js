@@ -123,10 +123,14 @@ class EmeLogWindow {
     const heading = document.createElement('h3');
     li.appendChild(heading);
 
-    const title = document.createElement('span');
+    const title = document.createElement('div');
     title.classList.add('title');
-    title.style.color = 'blue';
     heading.appendChild(title);
+    heading.appendChild(document.createTextNode(' '));
+
+    const time = document.createElement('div');
+    time.classList.add('time');
+    heading.appendChild(time);
 
     const timestamp = new Date(log.timestamp);
     // ISO date strings look like '2021-10-21T22:54:46.629Z', which is dense a
@@ -134,8 +138,11 @@ class EmeLogWindow {
     // '2021-10-21 22:54:46.629'.
     const formattedTimestamp =
         timestamp.toISOString().replace('T', ' ').replace('Z', '');
-    const time = document.createTextNode('  ' + formattedTimestamp);
-    heading.appendChild(time);
+
+    time.textContent = formattedTimestamp;
+    if (log.duration) {
+      time.textContent += ` - duration: ${log.duration.toFixed(1)} ms`;
+    }
 
     const data = document.createElement('pre');
     data.classList.add('data');
@@ -143,7 +150,7 @@ class EmeLogWindow {
 
     if (log.type == 'Warning') {
       title.textContent = 'WARNING';
-      title.style.color = 'red';
+      title.classList.add('warning');
       data.textContent = log.message;
     }
 
