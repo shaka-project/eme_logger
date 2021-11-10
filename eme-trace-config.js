@@ -192,6 +192,12 @@ function getSerializable(obj) {
     };
   }
 
+  // For readability, Date objects are best serialized as strings.
+  // This will use the browser's timezone to interpret the the date/time.
+  if (obj instanceof Date) {
+    return obj.toString();
+  }
+
   // Clone the elements of an array into serializable versions.
   if (Array.isArray(obj)) {
     const clone = [];
