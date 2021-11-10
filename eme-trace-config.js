@@ -28,7 +28,7 @@ function emeLogger(log) {
       log.className == 'MediaKeySession' &&
       log.methodName == 'update' &&
       log.args.length >= 1) {
-    log.args[0] = formatEmeLicense(log.args[0]);
+    log.args[0] = formatEmeResponse(log.args[0]);
   } else if (log.type == TraceAnything.LogTypes.Event &&
       log.className == 'MediaKeySession' &&
       log.eventName == 'message') {
@@ -39,8 +39,18 @@ function emeLogger(log) {
       // object named here.
       ...log.event,
       // This overrides on of those fields with a new value.
-      message: formatEmeMessage(log.event.message),
+      message: formatEmeRequest(log.event.message),
     };
+  } else if (log.type == TraceAnything.LogTypes.Method &&
+      log.className == 'MediaKeys' &&
+      log.methodName == 'setServerCertificate' &&
+      log.args.length >= 1) {
+    log.args[0] = formatEmeCertificate(log.args[0]);
+  } else if (log.type == TraceAnything.LogTypes.Method &&
+      log.className == 'MediaKeySession' &&
+      log.methodName == 'generateRequest' &&
+      log.args.length >= 2) {
+    log.args[1] = formatEmeInitData(log.args[0], log.args[1]);
   }
 
   // Log to the default logger in the JS console.
@@ -53,47 +63,116 @@ function emeLogger(log) {
 }
 
 /**
- * @param {BufferSource} license
- * @return {(string|BufferSource)}
+ * @param {BufferSource} response
+ * @return {(string|!Object|BufferSource)}
  */
-function formatEmeLicense(license) {
-  if (!license || !document.emeFormatters) {
-    return license;
+function formatEmeResponse(response) {
+  if (!response || !document.emeFormatters) {
+    return response;
   }
 
   for (const formatter of document.emeFormatters) {
     try {
-      const licenseText = formatter.formatUpdateCall(license);
-      if (licenseText) {
-        return licenseText;
+      let formattedResponse;
+
+      if (formatter.formatResponse) {  // v3 API
+        formattedResponse = formatter.formatResponse(response);
+      } else if (formatter.formatUpdateCall) {  // v2 API
+        formattedResponse = formatter.formatUpdateCall(response);
+      }
+
+      if (formattedResponse) {
+        return formattedResponse;
       }
     } catch (exception) {}  // Ignore, move on to the next formatter.
   }
 
-  // Return the original license, which will be formatted as bytes.
-  return license;
+  // Return the original response, which will be formatted as bytes.
+  return response;
 }
 
 /**
- * @param {BufferSource} message
- * @return {(string|BufferSource)}
+ * @param {BufferSource} request
+ * @return {(string|!Object|BufferSource)}
  */
-function formatEmeMessage(message) {
-  if (!document.emeFormatters) {
-    return message;
+function formatEmeRequest(request) {
+  if (!request || !document.emeFormatters) {
+    return request;
   }
 
   for (const formatter of document.emeFormatters) {
     try {
-      const messageText = formatter.formatmessage(message);
-      if (messageText) {
-        return messageText;
+      let formattedRequest;
+
+      if (formatter.formatRequest) {  // v3 API
+        formattedRequest = formatter.formatRequest(request);
+      } else if (formatter.formatmessage) {  // v2 API
+        formattedRequest = formatter.formatmessage(request);
+      }
+
+      if (formattedRequest) {
+        return formattedRequest;
       }
     } catch (exception) {}  // Ignore, move on to the next formatter.
   }
 
-  // Return the original message, which will be formatted as bytes.
-  return message;
+  // Return the original request, which will be formatted as bytes.
+  return request;
+}
+
+/**
+ * @param {BufferSource} certificate
+ * @return {(string|!Object|BufferSource)}
+ */
+function formatEmeCertificate(certificate) {
+  if (!certificate || !document.emeFormatters) {
+    return certificate;
+  }
+
+  for (const formatter of document.emeFormatters) {
+    try {
+      let formattedCertificate;
+
+      if (formatter.formatServerCertificate) {  // v3 API
+        formattedCertificate = formatter.formatServerCertificate(certificate);
+      }
+
+      if (formattedCertificate) {
+        return formattedCertificate;
+      }
+    } catch (exception) {}  // Ignore, move on to the next formatter.
+  }
+
+  // Return the original certificate, which will be formatted as bytes.
+  return certificate;
+}
+
+/**
+ * @param {string} initDataType
+ * @param {BufferSource} initData
+ * @return {(string|!Object|BufferSource)}
+ */
+function formatEmeInitData(initDataType, initData) {
+  if (!initData || !document.emeFormatters) {
+    return initData;
+  }
+
+  for (const formatter of document.emeFormatters) {
+    try {
+      let formattedInitData;
+
+      if (formatter.formatInitData) {  // v3 API
+        formattedInitData = formatter.formatInitData(initDataType, initData);
+      }
+
+      if (formattedInitData) {
+        return formattedInitData;
+      }
+    } catch (exception) {}  // Ignore, move on to the next formatter.
+  }
+
+  // Return the original init data, which will be formatted as bytes.
+  return initData;
 }
 
 /**
