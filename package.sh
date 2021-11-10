@@ -11,9 +11,9 @@ ARCHIVE=eme_logger-$VERSION.zip
 
 # Create an archive using git.  This method ensures that no uncommitted files
 # from your working directory are deployed.
-git archive HEAD --format=zip > "$ARCHIVE"
+git archive HEAD --format=zip --prefix=eme_logger/ > "$ARCHIVE"
 
 # Quietly (-q) remove (-d) certain files from the archive.
-zip -q -d "$ARCHIVE" package.sh "spec/*" "third_party/*"
+zip -q -d "$ARCHIVE" eme_logger/package.sh "eme_logger/spec/*"
 
 echo "$ARCHIVE created."
