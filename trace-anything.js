@@ -851,7 +851,7 @@ class TraceAnything {
     }
 
     if (traced.__TraceAnythingId__ == null) {
-      let id = TraceAnything._nextGeneratedId.get(className) || 1;
+      const id = TraceAnything._nextGeneratedId.get(className) || 1;
       TraceAnything._nextGeneratedId.set(className, id + 1);
       traced.__TraceAnythingId__ = className + '_' + id;
     }
