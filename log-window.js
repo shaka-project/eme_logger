@@ -138,11 +138,7 @@ class EmeLogWindow {
     heading.appendChild(title);
 
     const timestamp = new Date(log.timestamp);
-    // ISO date strings look like '2021-10-21T22:54:46.629Z', which is dense a
-    // little hard to read.  Tweak the output a little into something more like
-    // '2021-10-21 22:54:46.629'.
-    const formattedTimestamp =
-        timestamp.toISOString().replace('T', ' ').replace('Z', '');
+    const formattedTimestamp = timestamp.toString();
 
     time.textContent = formattedTimestamp;
     if (log.duration) {
