@@ -8,7 +8,7 @@ Preparing a version to publish:
 3. Commit the version number change.
 4. Tag the commit with the version number.
 5. Push commits and tags to github.
-6. Run `./package.sh` to generate a zip file for publication.
+6. Run `npm run build` to generate a zip file for publication.
 
 Publishing a new version:
 
@@ -23,6 +23,4 @@ Publishing a new version:
 9. Click `OK` on the confirmation dialog.
 10. If you are prompted to pay a one-time fee (which you should expense), sadly,
     it seems that your edits were lost and you must start again at step 2.
-
-TODO: Find a way to start the fee process before your first publication.
 

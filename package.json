@@ -1,11 +1,18 @@
 {
   "devDependencies": {
     "chromedriver": "^95.0.0",
+    "gulp": "^4.0.2",
+    "gulp-rename": "^2.0.0",
+    "gulp-zip": "^5.1.0",
     "jasmine-browser-runner": "^0.9.0",
     "jasmine-core": "^3.10.1",
     "json5": "^2.2.0"
   },
+  "dependencies": {
+    "trace-anything": "^1.0.0"
+  },
   "scripts": {
+    "build": "gulp",
     "test": "jasmine-browser-runner runSpecs"
   }
 }
