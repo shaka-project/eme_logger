@@ -267,9 +267,15 @@ function prettyPrint(obj, indentation = '') {
  * Listens for messages from the content script to append a log item to the
  * current frame and log file.
  */
-if (chrome.runtime) {
-  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    const log = request.log;
-    EmeLogWindow.instance.appendLog(log);
-  });
-}
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  const log = request.log;
+  EmeLogWindow.instance.appendLog(log);
+});
+
+/**
+ * When the extension icon is clicked, open the log window if it doesn't exist,
+ * and bring it to the front otherwise.
+ */
+chrome.browserAction.onClicked.addListener((tab) => {
+  EmeLogWindow.instance.open();
+});

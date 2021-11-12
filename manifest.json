@@ -25,8 +25,7 @@
     "scripts": ["log-window.js"]
   },
   "browser_action": {
-    "default_title": "EME Logger",
-    "default_popup": "popup.html"
+    "default_title": "EME Logger"
   },
   "web_accessible_resources": [
     "trace-anything.js",
