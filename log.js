@@ -18,10 +18,13 @@
 document.addEventListener('DOMContentLoaded', function() {
   const clearButton = document.querySelector('#clear-button');
   clearButton.addEventListener('click', () => {
-    // Clear the log.
-    const list = document.getElementById('eme-log');
-    while (list.hasChildNodes()) {
-      list.removeChild(list.firstChild);
-    }
+    EmeLogWindow.instance.clear();
+  });
+
+  const downloadButton = document.querySelector('#download-button');
+  downloadButton.addEventListener('click', () => {
+    // Set the download URI to a freshly-generated one that contains the
+    // current text from the log window.
+    downloadButton.href = EmeLogWindow.instance.getTextLogUri();
   });
 });

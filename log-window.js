@@ -18,33 +18,26 @@
 
 class EmeLogWindow {
   constructor() {
-    /** private {Window} */
+    /** @private {Window} */
     this.logWindow_ = null;
 
-    /** @private {FileWriter} */
-    this.fileWriter_ = null;
-
-    /** @private {!Promise} */
-    this.fileWriterOperation_ = Promise.resolve();
-
     /** @private {string} */
-    this.downloadUrl_ = '';
-
-    window.webkitRequestFileSystem(
-        window.PERSISTENT,
-        5 * 1024 * 1024,
-        (fileSystem) => this.initLogFile_(fileSystem));
+    this.textLogs_ = '';
   }
 
   /** Open the log window. */
   open() {
     if (!this.isOpen()) {
-      this.logWindow_ = window.open('log.html', 'EME Log', 'width=700,height=600');
+      this.logWindow_ = window.open(
+          'log.html', 'EME Log', 'width=700,height=600');
+
+      // Inject a copy of this class into the window so that it can get the log
+      // URI later.
+      this.logWindow_.EmeLogWindow = EmeLogWindow;
     }
+
+    // Bring the window to the foreground.
     this.logWindow_.focus();
-    if (this.downloadUrl_) {
-      this.initDownloadButton_();
-    }
   }
 
   /** @return {boolean} True if the log window is open. */
@@ -52,60 +45,22 @@ class EmeLogWindow {
     return this.logWindow_ != null && !this.logWindow_.closed;
   }
 
-  /**
-   * Initializes the log file. Any previous data will be cleared from the file.
-   * @param {FileSystem} fileSystem The FileSystem to contain the log.
-   * @private
-   */
-  initLogFile_(fileSystem) {
-    fileSystem.root.getFile('log.txt', {create: true}, (fileEntry) => {
-      this.downloadUrl_ = fileEntry.toURL();
-      if (this.logWindow_) {
-        this.initDownloadButton_();
-      }
-
-      fileEntry.createWriter((fileWriter) => {
-        this.fileWriter_ = fileWriter;
-        this.enqueueFileOperation_(() => this.fileWriter_.truncate(0));
-      });
-    });
+  /** @return {string} A URI to download the log as a text file. */
+  getTextLogUri() {
+    const blob = new Blob([this.textLogs_], {type: 'text/plain'});
+    return URL.createObjectURL(blob);
   }
 
-  /**
-   * Initializes the log file download button.
-   * @private
-   */
-  initDownloadButton_() {
-    const downloadButton =
-        this.logWindow_.document.querySelector('#download-button');
-    if (!downloadButton) {
-      // Wait for the document to finish loading, then call this method again.
-      this.logWindow_.addEventListener('DOMContentLoaded', () => {
-        this.initDownloadButton_();
-      });
+  /** Clear the log window. */
+  clear() {
+    const document = this.logWindow_.document;
+
+    const list = document.getElementById('eme-log');
+    while (list.hasChildNodes()) {
+      list.removeChild(list.firstChild);
     }
 
-    downloadButton.href = this.downloadUrl_;
-    // Now that a file can be downloaded, stop hiding the download button.
-    downloadButton.style.display = 'block';
-  }
-
-  /**
-   * Enqueue an operation for the file writer.  The API is event-based, but
-   * asynchronous.  We have to maintain the operations in order, and wait until
-   * the previous operation finishes before starting a new one.  We accomplish
-   * this through a Promise chain.
-   *
-   * @param {function()} writeOperation
-   * @private
-   */
-  enqueueFileOperation_(writeOperation) {
-    this.fileWriterOperation_ = this.fileWriterOperation_.then(
-        () => new Promise((resolve, reject) => {
-          writeOperation();
-          this.fileWriter_.onwriteend = resolve;
-          this.fileWriter_.onerror = reject;
-        }));
+    this.textLogs_ = '';
   }
 
   /**
@@ -116,7 +71,8 @@ class EmeLogWindow {
       return;
     }
 
-    const logElement = this.logWindow_.document.querySelector('#eme-log');
+    const document = this.logWindow_.document;
+    const logElement = document.querySelector('#eme-log');
     const li = document.createElement('li');
     logElement.appendChild(li);
 
@@ -205,16 +161,11 @@ class EmeLogWindow {
       }
     }
 
-    if (this.fileWriter_) {
-      const textBasedLog =
-          formattedTimestamp + '\n\n' +
-          data.textContent + '\n\n\n\n';
+    const textBasedLog =
+        formattedTimestamp + '\n\n' +
+        data.textContent + '\n\n\n\n';
 
-      this.enqueueFileOperation_(() => {
-        const blob = new Blob([textBasedLog], {type: 'text/plain'});
-        this.fileWriter_.write(blob);
-      });
-    }
+    this.textLogs_ += textBasedLog;
   }
 }
 
