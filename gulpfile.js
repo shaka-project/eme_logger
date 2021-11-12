@@ -31,8 +31,9 @@ function packageExtension() {
     'README.md',
     'icons/*',
     'manifest.json',
-    '*.js',
     '*.html',
+    '*.js',
+    '!gulpfile.js',
   ], {base: './'});
 
   return sources
