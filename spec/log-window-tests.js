@@ -77,8 +77,10 @@ describe('Log window', () => {
     EmeLogWindow.instance.appendLog({
       timestamp: date.getTime(),
     });
+    // Times are in the local user's timezone.  Without mocking that somehow,
+    // we can only set expectations on the date format.
     expect(mockLogElement.querySelector('h3').textContent)
-        .toContain('1969-07-20 12:34:56');
+        .toContain('Sun Jul 20 1969');
   });
 
   it('logs with durations', () => {
