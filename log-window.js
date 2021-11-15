@@ -264,19 +264,23 @@ function prettyPrint(obj, indentation = '') {
   return obj.toString();
 }
 
-/**
- * Listens for messages from the content script to append a log item to the
- * current frame and log file.
- */
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  const log = request.log;
-  EmeLogWindow.instance.appendLog(log);
-});
+// NOTE: These APIs are not defined in our test environment, but should always
+// be present when this is run as a Chrome extension.
+if (chrome.runtime !== undefined) {
+  /**
+   * Listens for messages from the content script to append a log item to the
+   * current frame and log file.
+   */
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    const log = request.log;
+    EmeLogWindow.instance.appendLog(log);
+  });
 
-/**
- * When the extension icon is clicked, open the log window if it doesn't exist,
- * and bring it to the front otherwise.
- */
-chrome.browserAction.onClicked.addListener((tab) => {
-  EmeLogWindow.instance.open();
-});
+  /**
+   * When the extension icon is clicked, open the log window if it doesn't exist,
+   * and bring it to the front otherwise.
+   */
+  chrome.browserAction.onClicked.addListener((tab) => {
+    EmeLogWindow.instance.open();
+  });
+}
