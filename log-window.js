@@ -163,6 +163,7 @@ class EmeLogWindow {
 
     const textBasedLog =
         formattedTimestamp + '\n\n' +
+        instanceId.textContent + '\n' +
         data.textContent + '\n\n\n\n';
 
     this.textLogs_ += textBasedLog;
