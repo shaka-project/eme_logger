@@ -23,6 +23,7 @@ describe('Log window', () => {
 
   beforeAll(() => {
     mockDocument = document.createElement('div');
+    mockDocument.createElement = (name) => document.createElement(name);
     document.body.appendChild(mockDocument);
 
     mockWindow = {
