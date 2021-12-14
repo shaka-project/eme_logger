@@ -34,13 +34,10 @@ function emeLogger(log) {
       log.eventName == 'message') {
     // You can't (and shouldn't, to avoid breaking the app) modify the event
     // object here.  So clone it, and replace the message field of that.
-    log.event = {
-      // The spread operator reads the fields and values (shallow clone) of the
-      // object named here.
-      ...log.event,
-      // This overrides on of those fields with a new value.
+    log.event = cloneEvent(log.event, {
+      // This overrides the message field with a new value from the formatter.
       message: formatEmeRequest(log.event.message),
-    };
+    });
   } else if (log.type == TraceAnything.LogTypes.Method &&
       log.className == 'MediaKeys' &&
       log.methodName == 'setServerCertificate' &&
@@ -60,6 +57,41 @@ function emeLogger(log) {
   delete log.instance;
 
   window.postMessage({type: 'emeTraceLog', log: prepLogForMessage(log)}, '*');
+}
+
+/**
+ * Clone an event.  The clone will have the same type and values, except for the
+ * values overridden by the overrides parameter.
+ *
+ * The spread operator and Object.assign can only read "own" properties of an
+ * object, so this custom cloning method must be used for Events instead.
+ *
+ * @param {!Event} original
+ * @param {Object=} overrides
+ * @return {!Event}
+ */
+function cloneEvent(original, overrides) {
+  const clone = {};
+
+  // When reading the original, we must use a for-in loop to see all fields.
+  // Static fields from Event and methods are skipped, but everything else is
+  // copied into a plain object.
+  for (const key in original) {
+    if (!(key in Event) && (typeof original[key] != 'function')) {
+      clone[key] = original[key];
+    }
+  }
+
+  // Overrides are applied all at once using Object.assign.
+  if (overrides) {
+    Object.assign(clone, overrides);
+  }
+
+  // Setting the prototype of the clone gives the clone the same type as the
+  // original.
+  Object.setPrototypeOf(clone, original.constructor.prototype);
+
+  return clone;
 }
 
 /**

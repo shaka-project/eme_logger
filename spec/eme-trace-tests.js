@@ -18,13 +18,15 @@
 
 describe('EME tracing', () => {
   beforeEach(() => {
-    spyOn(window, 'emeLogger').and.callFake((log) => {
+    spyOn(window, 'emeLogger').and.callThrough();
+
+    spyOn(window, 'postMessage').and.callFake((log) => {
+      expect(log.type).toEqual('emeTraceLog');
+
       // Validate that the logs can always be serialized.  We don't care about
       // the output at this level.
-      delete log.instance;
-
       try {
-        JSON.stringify(prepLogForMessage(log));
+        JSON.stringify(log);
       } catch (exception) {
         fail(exception);
       }
@@ -261,6 +263,32 @@ describe('EME tracing', () => {
             'eventName': 'keystatuseschange',
             'value': session.keyStatuses,
           }));
+    });
+
+    // Regression test for https://github.com/google/eme_logger/issues/27
+    it('Message events with all fields', async () => {
+      await session.generateRequest('cenc', initData);
+      // Wait for the message event to come through, with a generous timeout.
+      await delay(2);
+
+      // Cloning of Events happens at the emeLogger level, so we have to
+      // validate the results of that at the level of postMessage instead.
+      // Both message and messageType fields should be present.
+      const expectedMessage = jasmine.objectContaining({
+          log: jasmine.objectContaining({
+	          type: TraceAnything.LogTypes.Event,
+            event: {
+              __type__: 'message Event',
+              __fields__: jasmine.objectContaining({
+                message: jasmine.objectContaining({
+                  __type__: 'Uint8Array',
+                }),
+                messageType: 'license-request',
+              }),
+            },
+          }),
+        });
+      expect(postMessage).toHaveBeenCalledWith(expectedMessage, '*');
     });
   });
 
