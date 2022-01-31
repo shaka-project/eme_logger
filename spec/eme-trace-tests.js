@@ -261,7 +261,10 @@ describe('EME tracing', () => {
             'type': TraceAnything.LogTypes.Event,
             'className': 'MediaKeySession',
             'eventName': 'keystatuseschange',
-            'value': session.keyStatuses,
+            'value': jasmine.objectContaining({
+              'expiration': NaN,
+              'keyStatuses': session.keyStatuses,
+            }),
           }));
     });
 
