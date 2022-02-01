@@ -309,6 +309,14 @@ function getSerializable(obj) {
     return obj.toString();
   }
 
+  if (obj instanceof TimeRanges) {
+    const clone = [];
+    for (let i = 0; i < obj.length; i++) {
+       clone[i] = [obj.start(i), obj.end(i)];
+    }
+    return clone;
+  }
+
   // Clone the elements of an array into serializable versions.
   if (Array.isArray(obj)) {
     const clone = [];
@@ -392,13 +400,19 @@ TraceAnything.traceClass(MediaKeySession, combineOptions(options, {
   idProperty: 'sessionId',
 
   skipProperties: options.skipProperties.concat([
-    // Also skip logging certain noisy properites on MediaKeySession.
+    // Also skip logging certain noisy properties on MediaKeySession.
+    // They are logged with keystatuschange event.
     'expiration',
+    'keyStatuses',
 
     // This is still logged in the representation of the session, but we don't
     // need to log access to the property's getter.
     'sessionId',
   ]),
+
+  eventProperties: {
+    'keystatuseschange': ['expiration', 'keyStatuses'],
+  },
 }));
 
 // Trace media element types, and monitor the document for new instances.
@@ -406,6 +420,9 @@ const playbackStateProperties = [
   'currentTime',
   'paused',
   'ended',
+  'played',
+  'buffered',
+  'getVideoPlaybackQuality',
 ];
 const elementOptions = combineOptions(options, {
   // Skip all property access on media elements.
@@ -424,6 +441,7 @@ const elementOptions = combineOptions(options, {
     'getBoundingClientRect',
     'querySelector',
     'querySelectorAll',
+    'getVideoPlaybackQuality',
   ]),
 
   eventProperties: {
@@ -433,6 +451,12 @@ const elementOptions = combineOptions(options, {
     'playing': playbackStateProperties,
     'pause': playbackStateProperties,
     'ended': playbackStateProperties,
+    'durationchange': playbackStateProperties,
+    'waiting': playbackStateProperties,
+    'loadedmetadata': playbackStateProperties,
+    'loadeddata': playbackStateProperties,
+    'canplay': playbackStateProperties,
+    'canplaythrough': playbackStateProperties,
   },
 });
 TraceAnything.traceElement('video', elementOptions);
