@@ -12,7 +12,7 @@
     "trace-anything": "^1.0.1"
   },
   "scripts": {
-    "build": "npm install && gulp",
+    "build": "npm ci && gulp",
     "test": "jasmine-browser-runner runSpecs"
   }
 }
