@@ -1,23 +1,21 @@
 To publish a new version of EME logger, you must be a **direct** member of the
 `eme-logger-admins` group inside Google.
 
-Preparing a version to publish:
+Releasing on GitHub:
 
 1. Commit all functional changes for the new version.
-2. Update the version number in manifest.json.
-3. Commit the version number change.
-4. Tag the commit with the version number.
-5. Push commits and tags to github.
-6. Run `npm run build` to generate a zip file for publication.
+2. Merge the release PR created by our release workflow.
+3. Wait for the release to complete.
+4. Download the extension zip file which is attached to the release.
 
-Publishing a new version:
+Publishing on the Chrome Web Store:
 
 1. Visit [Chrome Developer Dashboard](https://chrome.google.com/webstore/developer/dashboard)
 2. Locate `EME Call and Event Logger` in the dashboard.
 3. Click `Edit` on that item in the dashboard.
 4. Click `Upload Updated Package`.
 5. Click `Choose file`.
-6. Choose the zip file you created in the previous steps.
+6. Choose the zip file you downloaded in the previous steps.
 7. Click `Upload`.
 8. Scroll to the bottom of the edit page and click `Publish changes`.
 9. Click `OK` on the confirmation dialog.
