@@ -14,5 +14,6 @@
   "scripts": {
     "build": "npm ci && gulp",
     "test": "jasmine-browser-runner runSpecs"
-  }
+  },
+  "version": "3.2.0"
 }
