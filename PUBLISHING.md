@@ -11,14 +11,15 @@ Releasing on GitHub:
 Publishing on the Chrome Web Store:
 
 1. Visit [Chrome Developer Dashboard](https://chrome.google.com/webstore/developer/dashboard)
-2. Locate `EME Call and Event Logger` in the dashboard.
-3. Click `Edit` on that item in the dashboard.
-4. Click `Upload Updated Package`.
-5. Click `Choose file`.
-6. Choose the zip file you downloaded in the previous steps.
-7. Click `Upload`.
-8. Scroll to the bottom of the edit page and click `Publish changes`.
-9. Click `OK` on the confirmation dialog.
-10. If you are prompted to pay a one-time fee (which you should expense), sadly,
+2. Select `EME Logger Admins` from the `Publisher` setting in the top-right.
+3. Click `EME Call and Event Logger` in the dashboard.
+4. Click `Package` on the left of the dashboard.
+5. Click `Upload new package` in the top-right.
+6. Click `Browse`.
+7. Choose the zip file you downloaded in the previous steps.
+8. Click `Submit for review` in the top-right.
+9. Make sure `Publish ... automatically` is checked in the confirmation dialog.
+10. Click `Submit For Review` in the confirmation dialog.
+11. If you are prompted to pay a one-time fee (which you should expense), sadly,
     it seems that your edits were lost and you must start again at step 2.
 
