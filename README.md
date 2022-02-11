@@ -52,3 +52,4 @@ if (!document.emeFormatters)
   document.emeFormatters = [];
 document.emeFormatters.push(new SomeFormatter);
 ```
+
