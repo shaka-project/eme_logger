@@ -268,7 +268,7 @@ describe('EME tracing', () => {
           }));
     });
 
-    // Regression test for https://github.com/google/eme_logger/issues/27
+    // Regression test for https://github.com/shaka-project/eme_logger/issues/27
     it('Message events with all fields', async () => {
       await session.generateRequest('cenc', initData);
       // Wait for the message event to come through, with a generous timeout.
