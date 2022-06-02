@@ -30,6 +30,23 @@
   right: 10px;
 }
 
+#hex-base64-toggle-button {
+  position: fixed;
+  top: 70px;
+  right: 10px;
+}
+
+#toggleValueCurrently {
+  position: fixed;
+  top: 100px;
+  right: 10px;
+}
+
+.base64data {
+  color: blue; 
+  /* display: none; */
+}
+
 h3 {
   padding-top: 1em;
 }
@@ -58,6 +75,8 @@ h3 {
     <p>Some personally identifiable information may be in the log. Be careful about posting the log on bug reports.</p>
     <button id="clear-button">Clear log</button>
     <a id="download-button" download="EMELogFile.txt"><button>Download log</button></a>
+    <button id="hex-base64-toggle-button">Toggle Between Hex and Base64</button>
+    <a id="toggleValueCurrently">Currently Displaying: Both</a>
     <ul id="eme-log"></ul>
   </body>
 </html>

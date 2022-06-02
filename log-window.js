@@ -16,6 +16,8 @@
  * @fileoverview Implements the log window.
  */
 
+ var toggle;
+
 class EmeLogWindow {
   constructor() {
     /** @private {Window} */
@@ -38,6 +40,7 @@ class EmeLogWindow {
 
     // Bring the window to the foreground.
     this.logWindow_.focus();
+    updateToggle();
   }
 
   /** @return {boolean} True if the log window is open. */
@@ -103,14 +106,19 @@ class EmeLogWindow {
 
     instanceId.textContent = log.instanceId;
 
-    const data = document.createElement('pre');
-    data.classList.add('data');
-    li.appendChild(data);
+    const hexData = document.createElement('pre');
+    hexData.classList.add('hexdata');
+    li.appendChild(hexData);
+
+    const base64data = document.createElement('pre');
+    base64data.classList.add('base64data');
+    li.appendChild(base64data);
 
     if (log.type == 'Warning') {
       title.textContent = 'WARNING';
       title.classList.add('warning');
-      data.textContent = log.message;
+      hexData.textContent = log.message;
+      base64data.textContent = log.message;
     }
 
     if (log.type == 'Constructor') {
@@ -122,49 +130,65 @@ class EmeLogWindow {
     } else if (log.type == 'Event') {
       title.textContent = `${log.className} ${log.eventName} Event`;
     }
-
+    //base64Data
     if (log.type == 'Constructor' || log.type == 'Method') {
-      const args = log.args.map(arg => prettyPrint(arg)).join(', ');
-      data.textContent = `${title.textContent}(${args})`;
+      const hexargs = log.args.map(arg => prettyPrint(arg)).join(', ');
+      hexData.textContent = `${title.textContent}(${hexargs})`;
+      const base64args = log.args.map(arg => prettyPrint(arg)).join(', ');
+      base64data.textContent = `${title.textContent}(${base64args})`;
 
       if (log.threw) {
-        data.textContent += ` threw ${prettyPrint(log.threw)}`;
+        hexData.textContent += ` threw ${prettyPrint(log.threw, true)}`;
+        base64data.textContent += ` threw ${prettyPrint(log.threw, true)}`;
       } else {
-        data.textContent += ` => ${prettyPrint(log.result)}`;
+        hexData.textContent += ` => ${prettyPrint(log.result, false)}`;
+        base64data.textContent += ` => ${prettyPrint(log.result, true)}`;
       }
     } else if (log.type == 'Getter') {
-      data.textContent = title.textContent;
+      hexData.textContent = title.textContent;
+      base64data.textContent = title.textContent;
 
       if (log.threw) {
-        data.textContent += ` threw ${prettyPrint(log.threw)}`;
+        hexData.textContent += ` threw ${prettyPrint(log.threw, false)}`;
+        base64data.textContent += ` threw ${prettyPrint(log.threw, true)}`;
       } else {
-        data.textContent += ` => ${prettyPrint(log.result)}`;
+        hexData.textContent += ` => ${prettyPrint(log.result, false)}`;
+        base64data.textContent += ` threw ${prettyPrint(log.threw, true)}`;
       }
     } else if (log.type == 'Setter') {
-      data.textContent = title.textContent;
+      hexData.textContent = title.textContent;
+      base64data.textContent = title.textContent;
 
       if (log.threw) {
-        data.textContent += ` threw ${prettyPrint(log.threw)}`;
+        hexData.textContent += ` threw ${prettyPrint(log.threw, false)}`;
+        base64data.textContent += ` threw ${prettyPrint(log.threw, true)}`;
       } else {
-        data.textContent += ` => ${prettyPrint(log.value)}`;
+        hexData.textContent += ` => ${prettyPrint(log.value, false)}`;
+        base64data.textContent += ` threw ${prettyPrint(log.threw, true)}`;
       }
     } else if (log.type == 'Event') {
-      data.textContent = `${log.className} `;
+      hexData.textContent = `${log.className} `;
+      base64data.textContent = `${log.className} `;
       if (!log.event.__type__) {
         // If the event object didn't properly inherit from Event, then we may
         // be missing type info.  Construct it now with the event name.
-        data.textContent += `${log.eventName} Event instance `;
+        hexData.textContent += `${log.eventName} Event instance `;
+        base64data.textContent += `${log.eventName} Event instance `;
       }
-      data.textContent += prettyPrint(log.event);
+      hexData.textContent += prettyPrint(log.event, false);
+      base64data.textContent += prettyPrint(log.event, true);
       if ('value' in log) {
-        data.textContent += '\nAssociated value: ' + prettyPrint(log.value);
+        hexData.textContent += '\nAssociated value: ' + prettyPrint(log.value, false);
+        base64data.textContent += '\nAssociated value: ' + prettyPrint(log.value,true);
       }
     }
 
     const textBasedLog =
         formattedTimestamp + '\n\n' +
         instanceId.textContent + '\n' +
-        data.textContent + '\n\n\n\n';
+        hexData.textContent + '\n\n\n\n';
+        base64data.textContent + '\n\n\n\n';
+
 
     this.textLogs_ += textBasedLog;
   }
@@ -182,12 +206,40 @@ function byteToHex(byte) {
   return '0x' + byte.toString(16).padStart(2, '0');
 }
 
+function bytesToBase64(bytes) {
+	var str = String.fromCharCode.apply(null,bytes);
+  return btoa(str);
+}
+
+function chunkSubstr(str) {
+
+  // add this constant such that it lines up with the hex data
+  const size = 97;
+
+  const numChunks = Math.ceil(str.length / size);
+  const chunks = new Array(numChunks);
+
+  for (let i = 0, o = 0; i < numChunks; ++i, o += size) {
+    chunks[i] = str.substr(o, size);
+  }
+
+  return chunks;
+}
+
+function updateToggle() {
+  const key='settings';
+  chrome.storage.local.get([key], function(result) {
+    console.log(result.settings.toggle);
+    toggle = result.settings.toggle;
+  });
+}
+
 /**
  * @param {*} obj
  * @param {string} indentation
  * @return {string}
  */
-function prettyPrint(obj, indentation = '') {
+function prettyPrint(obj,  base64Print, indentation = '') {
   if (obj == null) {
     return obj;
   }
@@ -198,24 +250,39 @@ function prettyPrint(obj, indentation = '') {
 
     // This has fields like an object.
     if (obj.__fields__) {
-      format += ' ' + prettyPrint(obj.__fields__, indentation);
+      format += ' ' + prettyPrint(obj.__fields__, base64Print, indentation);
     }
 
     // This has a data array like an ArrayBufferView.
     // TODO: Handle formatting for 16-bit and 32-bit values?
     if (obj.__data__) {
       const data = obj.__data__.slice();  // Make a copy
-      if (data.length == 0) {
-        format += '[]';
-      } else {
-        format += ' ' + '[\n';
-        while (data.length) {
-          const row = data.splice(0, 16);
-          format += indentation + '  ';
-          format += row.map(byteToHex).join(', ');
-          format += ',\n';
+      if(base64Print) {
+        if (data.length == 0) {
+          format += '[]';
+        } else {
+          format += ' ' + '[\n';
+          let base64 = chunkSubstr(bytesToBase64(data));
+  
+          for (const chunk of base64) {
+            format += chunk;
+            format += '\n';
+          }
+          format += indentation + ']';
         }
-        format += indentation + ']';
+      } else {
+        if (data.length == 0) {
+          format += '[]';
+        } else {
+          format += ' ' + '[\n';
+          while (data.length) {
+            const row = data.splice(0, 16);
+            format += indentation + '  ';
+            format += row.map(byteToHex).join(', ');
+            format += ',\n';
+          }
+          format += indentation + ']';
+        }
       }
     }
     return format;
@@ -227,13 +294,13 @@ function prettyPrint(obj, indentation = '') {
       return '[]';
     }
     if (obj.length == 1) {
-      return `[${prettyPrint(obj[0], indentation)}]`;
+      return `[${prettyPrint(obj[0], base64Print, indentation)}]`;
     }
 
     let insides = '';
     for (const entry of obj) {
       insides += indentation + '  ';
-      insides += prettyPrint(entry, indentation + '  ') + ',\n';
+      insides += prettyPrint(entry, base64Print, indentation + '  ') + ',\n';
     }
     return `[\n${insides}${indentation}]`;
   }
@@ -246,13 +313,13 @@ function prettyPrint(obj, indentation = '') {
       return '{}';
     }
     if (keys.length == 1) {
-      return `{${keys[0]}: ${prettyPrint(obj[keys[0]], indentation)}}`;
+      return `{${keys[0]}: ${prettyPrint(obj[keys[0]], base64Print, indentation)}}`;
     }
 
     let insides = '';
     for (const key of keys) {
       insides += indentation + '  ' + key + ': ';
-      insides += prettyPrint(obj[key], indentation + '  ') + ',\n';
+      insides += prettyPrint(obj[key], base64Print, indentation + '  ') + ',\n';
     }
     return `{\n${insides}${indentation}}`;
   }
