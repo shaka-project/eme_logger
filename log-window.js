@@ -132,80 +132,54 @@ class EmeLogWindow {
     }
     //base64Data
     if (log.type == 'Constructor' || log.type == 'Method') {
-      const args = log.args.map(arg => prettyPrintBase64(arg)).join(', ');
-      base64data.textContent = `${title.textContent}(${args})`;
+      const hexargs = log.args.map(arg => prettyPrint(arg)).join(', ');
+      hexData.textContent = `${title.textContent}(${hexargs})`;
+      const base64args = log.args.map(arg => prettyPrint(arg)).join(', ');
+      base64data.textContent = `${title.textContent}(${base64args})`;
 
       if (log.threw) {
-        base64data.textContent += ` threw ${prettyPrintBase64(log.threw)}`;
+        hexData.textContent += ` threw ${prettyPrint(log.threw, true)}`;
+        base64data.textContent += ` threw ${prettyPrint(log.threw, true)}`;
       } else {
-        base64data.textContent += ` => ${prettyPrintBase64(log.result)}`;
+        hexData.textContent += ` => ${prettyPrint(log.result, false)}`;
+        base64data.textContent += ` => ${prettyPrint(log.result, true)}`;
       }
     } else if (log.type == 'Getter') {
+      hexData.textContent = title.textContent;
       base64data.textContent = title.textContent;
 
       if (log.threw) {
-        base64data.textContent += ` threw ${prettyPrintBase64(log.threw)}`;
+        hexData.textContent += ` threw ${prettyPrint(log.threw, false)}`;
+        base64data.textContent += ` threw ${prettyPrint(log.threw, true)}`;
       } else {
-        base64data.textContent += ` => ${prettyPrintBase64(log.result)}`;
+        hexData.textContent += ` => ${prettyPrint(log.result, false)}`;
+        base64data.textContent += ` threw ${prettyPrint(log.threw, true)}`;
       }
     } else if (log.type == 'Setter') {
+      hexData.textContent = title.textContent;
       base64data.textContent = title.textContent;
 
       if (log.threw) {
-        base64data.textContent += ` threw ${prettyPrintBase64(log.threw)}`;
+        hexData.textContent += ` threw ${prettyPrint(log.threw, false)}`;
+        base64data.textContent += ` threw ${prettyPrint(log.threw, true)}`;
       } else {
-        base64data.textContent += ` => ${prettyPrintBase64(log.value)}`;
+        hexData.textContent += ` => ${prettyPrint(log.value, false)}`;
+        base64data.textContent += ` threw ${prettyPrint(log.threw, true)}`;
       }
     } else if (log.type == 'Event') {
+      hexData.textContent = `${log.className} `;
       base64data.textContent = `${log.className} `;
       if (!log.event.__type__) {
         // If the event object didn't properly inherit from Event, then we may
         // be missing type info.  Construct it now with the event name.
+        hexData.textContent += `${log.eventName} Event instance `;
         base64data.textContent += `${log.eventName} Event instance `;
       }
-      base64data.textContent += prettyPrintBase64(log.event);
+      hexData.textContent += prettyPrint(log.event, false);
+      base64data.textContent += prettyPrint(log.event, true);
       if ('value' in log) {
-        base64data.textContent += '\nAssociated value: ' + prettyPrintBase64(log.value);
-      }
-    }
-    
-
-    //hexData 
-    if (log.type == 'Constructor' || log.type == 'Method') {
-      const args = log.args.map(arg => prettyPrintHex(arg)).join(', ');
-      hexData.textContent = `${title.textContent}(${args})`;
-
-      if (log.threw) {
-        hexData.textContent += ` threw ${prettyPrintHex(log.threw)}`;
-      } else {
-        hexData.textContent += ` => ${prettyPrintHex(log.result)}`;
-      }
-    } else if (log.type == 'Getter') {
-      hexData.textContent = title.textContent;
-
-      if (log.threw) {
-        hexData.textContent += ` threw ${prettyPrintHex(log.threw)}`;
-      } else {
-        hexData.textContent += ` => ${prettyPrintHex(log.result)}`;
-      }
-    } else if (log.type == 'Setter') {
-      hexData.textContent = title.textContent;
-
-      if (log.threw) {
-        hexData.textContent += ` threw ${prettyPrintHex(log.threw)}`;
-      } else {
-        hexData.textContent += ` => ${prettyPrintHex(log.value)}`;
-      }
-    } else if (log.type == 'Event') {
-      hexData.textContent = `${log.className} `;
-      if (!log.event.__type__) {
-        // If the event object didn't properly inherit from Event, then we may
-        // be missing type info.  Construct it now with the event name.
-        hexData.textContent += `${log.eventName} Event instance `;
-      }
-      hexData.textContent += prettyPrintHex(log.event);
-      if ('value' in log) {
-        hexData.textContent += '\nAssociated value: ' + prettyPrintHex(log.value);
+        hexData.textContent += '\nAssociated value: ' + prettyPrint(log.value, false);
+        base64data.textContent += '\nAssociated value: ' + prettyPrint(log.value,true);
       }
     }
 
@@ -265,7 +239,7 @@ function updateToggle() {
  * @param {string} indentation
  * @return {string}
  */
-function prettyPrintBase64(obj, indentation = '') {
+function prettyPrint(obj,  base64Print, indentation = '') {
   if (obj == null) {
     return obj;
   }
@@ -276,24 +250,39 @@ function prettyPrintBase64(obj, indentation = '') {
 
     // This has fields like an object.
     if (obj.__fields__) {
-      format += ' ' + prettyPrintBase64(obj.__fields__, indentation);
+      format += ' ' + prettyPrint(obj.__fields__, base64Print, indentation);
     }
 
     // This has a data array like an ArrayBufferView.
     // TODO: Handle formatting for 16-bit and 32-bit values?
     if (obj.__data__) {
       const data = obj.__data__.slice();  // Make a copy
-      if (data.length == 0) {
-        format += '[]';
-      } else {
-        format += ' ' + '[\n';
-        let base64 = chunkSubstr(bytesToBase64(data));
-
-        for (const chunk of base64) {
-          format += chunk;
-          format += '\n';
+      if(base64Print) {
+        if (data.length == 0) {
+          format += '[]';
+        } else {
+          format += ' ' + '[\n';
+          let base64 = chunkSubstr(bytesToBase64(data));
+  
+          for (const chunk of base64) {
+            format += chunk;
+            format += '\n';
+          }
+          format += indentation + ']';
         }
-        format += indentation + ']';
+      } else {
+        if (data.length == 0) {
+          format += '[]';
+        } else {
+          format += ' ' + '[\n';
+          while (data.length) {
+            const row = data.splice(0, 16);
+            format += indentation + '  ';
+            format += row.map(byteToHex).join(', ');
+            format += ',\n';
+          }
+          format += indentation + ']';
+        }
       }
     }
     return format;
@@ -305,13 +294,13 @@ function prettyPrintBase64(obj, indentation = '') {
       return '[]';
     }
     if (obj.length == 1) {
-      return `[${prettyPrintBase64(obj[0], indentation)}]`;
+      return `[${prettyPrint(obj[0], base64Print, indentation)}]`;
     }
 
     let insides = '';
     for (const entry of obj) {
       insides += indentation + '  ';
-      insides += prettyPrintBase64(entry, indentation + '  ') + ',\n';
+      insides += prettyPrint(entry, base64Print, indentation + '  ') + ',\n';
     }
     return `[\n${insides}${indentation}]`;
   }
@@ -324,103 +313,13 @@ function prettyPrintBase64(obj, indentation = '') {
       return '{}';
     }
     if (keys.length == 1) {
-      return `{${keys[0]}: ${prettyPrintBase64(obj[keys[0]], indentation)}}`;
+      return `{${keys[0]}: ${prettyPrint(obj[keys[0]], base64Print, indentation)}}`;
     }
 
     let insides = '';
     for (const key of keys) {
       insides += indentation + '  ' + key + ': ';
-      insides += prettyPrintBase64(obj[key], indentation + '  ') + ',\n';
-    }
-    return `{\n${insides}${indentation}}`;
-  }
-
-  if (typeof obj == 'string') {
-    return `"${obj}"`;
-  }
-
-  return obj.toString();
-}
-
-function updateToggle() {
-  const key='settings';
-  chrome.storage.local.get([key], function(result) {
-    console.log(result.settings.toggle);
-    toggle = result.settings.toggle;
-  });
-}
-
-/**
- * @param {*} obj
- * @param {string} indentation
- * @return {string}
- */
-function prettyPrintHex(obj, indentation = '') {
-  if (obj == null) {
-    return obj;
-  }
-
-  // If it's a named type, unpack it and attach the name.
-  if (obj.__type__) {
-    let format = obj.__type__ + ' instance';
-
-    // This has fields like an object.
-    if (obj.__fields__) {
-      format += ' ' + prettyPrintHex(obj.__fields__, indentation);
-    }
-
-    // This has a data array like an ArrayBufferView.
-    // TODO: Handle formatting for 16-bit and 32-bit values?
-    if (obj.__data__) {
-      const data = obj.__data__.slice();  // Make a copy
-      if (data.length == 0) {
-        format += '[]';
-      } else {
-        format += ' ' + '[\n';
-        while (data.length) {
-          const row = data.splice(0, 16);
-          format += indentation + '  ';
-          format += row.map(byteToHex).join(', ');
-          format += ',\n';
-        }
-        format += indentation + ']';
-      }
-    }
-    return format;
-  }
-
-  if (Array.isArray(obj)) {
-    // More compact representations for empty or 1-element arrays.
-    if (obj.length == 0) {
-      return '[]';
-    }
-    if (obj.length == 1) {
-      return `[${prettyPrintHex(obj[0], indentation)}]`;
-    }
-
-    let insides = '';
-    for (const entry of obj) {
-      insides += indentation + '  ';
-      insides += prettyPrintHex(entry, indentation + '  ') + ',\n';
-    }
-    return `[\n${insides}${indentation}]`;
-  }
-
-  if (obj.constructor == Object) {
-    const keys = Object.keys(obj);
-
-    // More compact representations for empty or 1-element objects.
-    if (keys.length == 0) {
-      return '{}';
-    }
-    if (keys.length == 1) {
-      return `{${keys[0]}: ${prettyPrintHex(obj[keys[0]], indentation)}}`;
-    }
-
-    let insides = '';
-    for (const key of keys) {
-      insides += indentation + '  ' + key + ': ';
-      insides += prettyPrintHex(obj[key], indentation + '  ') + ',\n';
+      insides += prettyPrint(obj[key], base64Print, indentation + '  ') + ',\n';
     }
     return `{\n${insides}${indentation}}`;
   }
