@@ -16,6 +16,8 @@
  * @fileoverview Implements the log window.
  */
 
+ var toggle;
+
 class EmeLogWindow {
   constructor() {
     /** @private {Window} */
@@ -38,6 +40,7 @@ class EmeLogWindow {
 
     // Bring the window to the foreground.
     this.logWindow_.focus();
+    updateToggle();
   }
 
   /** @return {boolean} True if the log window is open. */
@@ -103,14 +106,19 @@ class EmeLogWindow {
 
     instanceId.textContent = log.instanceId;
 
-    const data = document.createElement('pre');
-    data.classList.add('data');
-    li.appendChild(data);
+    const hexData = document.createElement('pre');
+    hexData.classList.add('hexdata');
+    li.appendChild(hexData);
+
+    const base64data = document.createElement('pre');
+    base64data.classList.add('base64data');
+    li.appendChild(base64data);
 
     if (log.type == 'Warning') {
       title.textContent = 'WARNING';
       title.classList.add('warning');
-      data.textContent = log.message;
+      hexData.textContent = log.message;
+      base64data.textContent = log.message;
     }
 
     if (log.type == 'Constructor') {
@@ -122,49 +130,91 @@ class EmeLogWindow {
     } else if (log.type == 'Event') {
       title.textContent = `${log.className} ${log.eventName} Event`;
     }
-
+    //base64Data
     if (log.type == 'Constructor' || log.type == 'Method') {
-      const args = log.args.map(arg => prettyPrint(arg)).join(', ');
-      data.textContent = `${title.textContent}(${args})`;
+      const args = log.args.map(arg => prettyPrintBase64(arg)).join(', ');
+      base64data.textContent = `${title.textContent}(${args})`;
 
       if (log.threw) {
-        data.textContent += ` threw ${prettyPrint(log.threw)}`;
+        base64data.textContent += ` threw ${prettyPrintBase64(log.threw)}`;
       } else {
-        data.textContent += ` => ${prettyPrint(log.result)}`;
+        base64data.textContent += ` => ${prettyPrintBase64(log.result)}`;
       }
     } else if (log.type == 'Getter') {
-      data.textContent = title.textContent;
+      base64data.textContent = title.textContent;
 
       if (log.threw) {
-        data.textContent += ` threw ${prettyPrint(log.threw)}`;
+        base64data.textContent += ` threw ${prettyPrintBase64(log.threw)}`;
       } else {
-        data.textContent += ` => ${prettyPrint(log.result)}`;
+        base64data.textContent += ` => ${prettyPrintBase64(log.result)}`;
       }
     } else if (log.type == 'Setter') {
-      data.textContent = title.textContent;
+      base64data.textContent = title.textContent;
 
       if (log.threw) {
-        data.textContent += ` threw ${prettyPrint(log.threw)}`;
+        base64data.textContent += ` threw ${prettyPrintBase64(log.threw)}`;
       } else {
-        data.textContent += ` => ${prettyPrint(log.value)}`;
+        base64data.textContent += ` => ${prettyPrintBase64(log.value)}`;
       }
     } else if (log.type == 'Event') {
-      data.textContent = `${log.className} `;
+      base64data.textContent = `${log.className} `;
       if (!log.event.__type__) {
         // If the event object didn't properly inherit from Event, then we may
         // be missing type info.  Construct it now with the event name.
-        data.textContent += `${log.eventName} Event instance `;
+        base64data.textContent += `${log.eventName} Event instance `;
       }
-      data.textContent += prettyPrint(log.event);
+      base64data.textContent += prettyPrintBase64(log.event);
       if ('value' in log) {
-        data.textContent += '\nAssociated value: ' + prettyPrint(log.value);
+        base64data.textContent += '\nAssociated value: ' + prettyPrintBase64(log.value);
+      }
+    }
+    
+
+    //hexData 
+    if (log.type == 'Constructor' || log.type == 'Method') {
+      const args = log.args.map(arg => prettyPrintHex(arg)).join(', ');
+      hexData.textContent = `${title.textContent}(${args})`;
+
+      if (log.threw) {
+        hexData.textContent += ` threw ${prettyPrintHex(log.threw)}`;
+      } else {
+        hexData.textContent += ` => ${prettyPrintHex(log.result)}`;
+      }
+    } else if (log.type == 'Getter') {
+      hexData.textContent = title.textContent;
+
+      if (log.threw) {
+        hexData.textContent += ` threw ${prettyPrintHex(log.threw)}`;
+      } else {
+        hexData.textContent += ` => ${prettyPrintHex(log.result)}`;
+      }
+    } else if (log.type == 'Setter') {
+      hexData.textContent = title.textContent;
+
+      if (log.threw) {
+        hexData.textContent += ` threw ${prettyPrintHex(log.threw)}`;
+      } else {
+        hexData.textContent += ` => ${prettyPrintHex(log.value)}`;
+      }
+    } else if (log.type == 'Event') {
+      hexData.textContent = `${log.className} `;
+      if (!log.event.__type__) {
+        // If the event object didn't properly inherit from Event, then we may
+        // be missing type info.  Construct it now with the event name.
+        hexData.textContent += `${log.eventName} Event instance `;
+      }
+      hexData.textContent += prettyPrintHex(log.event);
+      if ('value' in log) {
+        hexData.textContent += '\nAssociated value: ' + prettyPrintHex(log.value);
       }
     }
 
     const textBasedLog =
         formattedTimestamp + '\n\n' +
         instanceId.textContent + '\n' +
-        data.textContent + '\n\n\n\n';
+        hexData.textContent + '\n\n\n\n';
+        base64data.textContent + '\n\n\n\n';
+
 
     this.textLogs_ += textBasedLog;
   }
@@ -182,12 +232,40 @@ function byteToHex(byte) {
   return '0x' + byte.toString(16).padStart(2, '0');
 }
 
+function bytesToBase64(bytes) {
+	var str = String.fromCharCode.apply(null,bytes);
+  return btoa(str);
+}
+
+function chunkSubstr(str) {
+
+  // add this constant such that it lines up with the hex data
+  const size = 97;
+
+  const numChunks = Math.ceil(str.length / size);
+  const chunks = new Array(numChunks);
+
+  for (let i = 0, o = 0; i < numChunks; ++i, o += size) {
+    chunks[i] = str.substr(o, size);
+  }
+
+  return chunks;
+}
+
+function updateToggle() {
+  const key='settings';
+  chrome.storage.local.get([key], function(result) {
+    console.log(result.settings.toggle);
+    toggle = result.settings.toggle;
+  });
+}
+
 /**
  * @param {*} obj
  * @param {string} indentation
  * @return {string}
  */
-function prettyPrint(obj, indentation = '') {
+function prettyPrintBase64(obj, indentation = '') {
   if (obj == null) {
     return obj;
   }
@@ -198,7 +276,97 @@ function prettyPrint(obj, indentation = '') {
 
     // This has fields like an object.
     if (obj.__fields__) {
-      format += ' ' + prettyPrint(obj.__fields__, indentation);
+      format += ' ' + prettyPrintBase64(obj.__fields__, indentation);
+    }
+
+    // This has a data array like an ArrayBufferView.
+    // TODO: Handle formatting for 16-bit and 32-bit values?
+    if (obj.__data__) {
+      const data = obj.__data__.slice();  // Make a copy
+      if (data.length == 0) {
+        format += '[]';
+      } else {
+        format += ' ' + '[\n';
+        let base64 = chunkSubstr(bytesToBase64(data));
+
+        for (const chunk of base64) {
+          format += chunk;
+          format += '\n';
+        }
+        format += indentation + ']';
+      }
+    }
+    return format;
+  }
+
+  if (Array.isArray(obj)) {
+    // More compact representations for empty or 1-element arrays.
+    if (obj.length == 0) {
+      return '[]';
+    }
+    if (obj.length == 1) {
+      return `[${prettyPrintBase64(obj[0], indentation)}]`;
+    }
+
+    let insides = '';
+    for (const entry of obj) {
+      insides += indentation + '  ';
+      insides += prettyPrintBase64(entry, indentation + '  ') + ',\n';
+    }
+    return `[\n${insides}${indentation}]`;
+  }
+
+  if (obj.constructor == Object) {
+    const keys = Object.keys(obj);
+
+    // More compact representations for empty or 1-element objects.
+    if (keys.length == 0) {
+      return '{}';
+    }
+    if (keys.length == 1) {
+      return `{${keys[0]}: ${prettyPrintBase64(obj[keys[0]], indentation)}}`;
+    }
+
+    let insides = '';
+    for (const key of keys) {
+      insides += indentation + '  ' + key + ': ';
+      insides += prettyPrintBase64(obj[key], indentation + '  ') + ',\n';
+    }
+    return `{\n${insides}${indentation}}`;
+  }
+
+  if (typeof obj == 'string') {
+    return `"${obj}"`;
+  }
+
+  return obj.toString();
+}
+
+function updateToggle() {
+  const key='settings';
+  chrome.storage.local.get([key], function(result) {
+    console.log(result.settings.toggle);
+    toggle = result.settings.toggle;
+  });
+}
+
+/**
+ * @param {*} obj
+ * @param {string} indentation
+ * @return {string}
+ */
+function prettyPrintHex(obj, indentation = '') {
+  if (obj == null) {
+    return obj;
+  }
+
+  // If it's a named type, unpack it and attach the name.
+  if (obj.__type__) {
+    let format = obj.__type__ + ' instance';
+
+    // This has fields like an object.
+    if (obj.__fields__) {
+      format += ' ' + prettyPrintHex(obj.__fields__, indentation);
     }
 
     // This has a data array like an ArrayBufferView.
@@ -227,13 +395,13 @@ function prettyPrint(obj, indentation = '') {
       return '[]';
     }
     if (obj.length == 1) {
-      return `[${prettyPrint(obj[0], indentation)}]`;
+      return `[${prettyPrintHex(obj[0], indentation)}]`;
     }
 
     let insides = '';
     for (const entry of obj) {
       insides += indentation + '  ';
-      insides += prettyPrint(entry, indentation + '  ') + ',\n';
+      insides += prettyPrintHex(entry, indentation + '  ') + ',\n';
     }
     return `[\n${insides}${indentation}]`;
   }
@@ -246,13 +414,13 @@ function prettyPrint(obj, indentation = '') {
       return '{}';
     }
     if (keys.length == 1) {
-      return `{${keys[0]}: ${prettyPrint(obj[keys[0]], indentation)}}`;
+      return `{${keys[0]}: ${prettyPrintHex(obj[keys[0]], indentation)}}`;
     }
 
     let insides = '';
     for (const key of keys) {
       insides += indentation + '  ' + key + ': ';
-      insides += prettyPrint(obj[key], indentation + '  ') + ',\n';
+      insides += prettyPrintHex(obj[key], indentation + '  ') + ',\n';
     }
     return `{\n${insides}${indentation}}`;
   }
