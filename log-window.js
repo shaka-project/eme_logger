@@ -124,29 +124,29 @@ class EmeLogWindow {
     }
 
     if (log.type == 'Constructor' || log.type == 'Method') {
-      const args = log.args.map(arg => prettyPrint(arg)).join(', ');
+      const args = log.args.map(arg => this.prettyPrint(arg)).join(', ');
       data.textContent = `${title.textContent}(${args})`;
 
       if (log.threw) {
-        data.textContent += ` threw ${prettyPrint(log.threw)}`;
+        data.textContent += ` threw ${this.prettyPrint(log.threw)}`;
       } else {
-        data.textContent += ` => ${prettyPrint(log.result)}`;
+        data.textContent += ` => ${this.prettyPrint(log.result)}`;
       }
     } else if (log.type == 'Getter') {
       data.textContent = title.textContent;
 
       if (log.threw) {
-        data.textContent += ` threw ${prettyPrint(log.threw)}`;
+        data.textContent += ` threw ${this.prettyPrint(log.threw)}`;
       } else {
-        data.textContent += ` => ${prettyPrint(log.result)}`;
+        data.textContent += ` => ${this.prettyPrint(log.result)}`;
       }
     } else if (log.type == 'Setter') {
       data.textContent = title.textContent;
 
       if (log.threw) {
-        data.textContent += ` threw ${prettyPrint(log.threw)}`;
+        data.textContent += ` threw ${this.prettyPrint(log.threw)}`;
       } else {
-        data.textContent += ` => ${prettyPrint(log.value)}`;
+        data.textContent += ` => ${this.prettyPrint(log.value)}`;
       }
     } else if (log.type == 'Event') {
       data.textContent = `${log.className} `;
@@ -155,9 +155,10 @@ class EmeLogWindow {
         // be missing type info.  Construct it now with the event name.
         data.textContent += `${log.eventName} Event instance `;
       }
-      data.textContent += prettyPrint(log.event);
+      data.textContent += this.prettyPrint(log.event);
       if ('value' in log) {
-        data.textContent += '\nAssociated value: ' + prettyPrint(log.value);
+        data.textContent +=
+            '\nAssociated value: ' + this.prettyPrint(log.value);
       }
     }
 
@@ -168,101 +169,99 @@ class EmeLogWindow {
 
     this.textLogs_ += textBasedLog;
   }
+
+  /**
+   * @param {number} byte
+   * @return {string}
+   */
+  byteToHex(byte) { return '0x' + byte.toString(16).padStart(2, '0'); }
+
+  /**
+   * @param {*} obj
+   * @param {string} indentation
+   * @return {string}
+   */
+  prettyPrint(obj, indentation = '') {
+    if (obj == null) {
+      return obj;
+    }
+
+    // If it's a named type, unpack it and attach the name.
+    if (obj.__type__) {
+      let format = obj.__type__ + ' instance';
+
+      // This has fields like an object.
+      if (obj.__fields__) {
+        format += ' ' + this.prettyPrint(obj.__fields__, indentation);
+      }
+
+      // This has a data array like an ArrayBufferView.
+      // TODO: Handle formatting for 16-bit and 32-bit values?
+      if (obj.__data__) {
+        const data = obj.__data__.slice(); // Make a copy
+        if (data.length == 0) {
+          format += '[]';
+        } else {
+          format += ' ' +
+                    '[\n';
+          while (data.length) {
+            const row = data.splice(0, 16);
+            format += indentation + '  ';
+            format += row.map(this.byteToHex).join(', ');
+            format += ',\n';
+          }
+          format += indentation + ']';
+        }
+      }
+      return format;
+    }
+
+    if (Array.isArray(obj)) {
+      // More compact representations for empty or 1-element arrays.
+      if (obj.length == 0) {
+        return '[]';
+      }
+      if (obj.length == 1) {
+        return `[${this.prettyPrint(obj[0], indentation)}]`;
+      }
+
+      let insides = '';
+      for (const entry of obj) {
+        insides += indentation + '  ';
+        insides += this.prettyPrint(entry, indentation + '  ') + ',\n';
+      }
+      return `[\n${insides}${indentation}]`;
+    }
+
+    if (obj.constructor == Object) {
+      const keys = Object.keys(obj);
+
+      // More compact representations for empty or 1-element objects.
+      if (keys.length == 0) {
+        return '{}';
+      }
+      if (keys.length == 1) {
+        return `{${keys[0]}: ${this.prettyPrint(obj[keys[0]], indentation)}}`;
+      }
+
+      let insides = '';
+      for (const key of keys) {
+        insides += indentation + '  ' + key + ': ';
+        insides += this.prettyPrint(obj[key], indentation + '  ') + ',\n';
+      }
+      return `{\n${insides}${indentation}}`;
+    }
+
+    if (typeof obj == 'string') {
+      return `"${obj}"`;
+    }
+
+    return obj.toString();
+  }
 }
 
 EmeLogWindow.instance = new EmeLogWindow();
 window.EmeLogWindow = EmeLogWindow;
-
-
-/**
- * @param {number} byte
- * @return {string}
- */
-function byteToHex(byte) {
-  return '0x' + byte.toString(16).padStart(2, '0');
-}
-
-/**
- * @param {*} obj
- * @param {string} indentation
- * @return {string}
- */
-function prettyPrint(obj, indentation = '') {
-  if (obj == null) {
-    return obj;
-  }
-
-  // If it's a named type, unpack it and attach the name.
-  if (obj.__type__) {
-    let format = obj.__type__ + ' instance';
-
-    // This has fields like an object.
-    if (obj.__fields__) {
-      format += ' ' + prettyPrint(obj.__fields__, indentation);
-    }
-
-    // This has a data array like an ArrayBufferView.
-    // TODO: Handle formatting for 16-bit and 32-bit values?
-    if (obj.__data__) {
-      const data = obj.__data__.slice();  // Make a copy
-      if (data.length == 0) {
-        format += '[]';
-      } else {
-        format += ' ' + '[\n';
-        while (data.length) {
-          const row = data.splice(0, 16);
-          format += indentation + '  ';
-          format += row.map(byteToHex).join(', ');
-          format += ',\n';
-        }
-        format += indentation + ']';
-      }
-    }
-    return format;
-  }
-
-  if (Array.isArray(obj)) {
-    // More compact representations for empty or 1-element arrays.
-    if (obj.length == 0) {
-      return '[]';
-    }
-    if (obj.length == 1) {
-      return `[${prettyPrint(obj[0], indentation)}]`;
-    }
-
-    let insides = '';
-    for (const entry of obj) {
-      insides += indentation + '  ';
-      insides += prettyPrint(entry, indentation + '  ') + ',\n';
-    }
-    return `[\n${insides}${indentation}]`;
-  }
-
-  if (obj.constructor == Object) {
-    const keys = Object.keys(obj);
-
-    // More compact representations for empty or 1-element objects.
-    if (keys.length == 0) {
-      return '{}';
-    }
-    if (keys.length == 1) {
-      return `{${keys[0]}: ${prettyPrint(obj[keys[0]], indentation)}}`;
-    }
-
-    let insides = '';
-    for (const key of keys) {
-      insides += indentation + '  ' + key + ': ';
-      insides += prettyPrint(obj[key], indentation + '  ') + ',\n';
-    }
-    return `{\n${insides}${indentation}}`;
-  }
-
-  if (typeof obj == 'string') {
-    return `"${obj}"`;
-  }
-
-  return obj.toString();
-}
 
 // NOTE: These APIs are not defined in our test environment, but should always
 // be present when this is run as a Chrome extension.
