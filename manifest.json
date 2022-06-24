@@ -30,6 +30,9 @@
       "log-window.js"
     ]
   },
+  "permissions": [
+    "storage"
+  ],
   "browser_action": {
     "default_title": "EME Logger"
   },
