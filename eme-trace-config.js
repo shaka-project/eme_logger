@@ -336,6 +336,14 @@ function getSerializable(obj) {
     if (k.startsWith('__TraceAnything') || typeof obj[k] == 'function') {
       continue;
     }
+
+    // 'keystatuseschange.expiration' is returned as a ECMAScript Time Value,
+    // so convert it into a Date if specified for better readability.
+    if (k == 'expiration' && !isNaN(obj[k])) {
+      clone[k] = getSerializable(new Date(obj[k]));
+      continue;
+    }
+
     clone[k] = getSerializable(obj[k]);
   }
   // Make sure generated IDs get logged.  Do this through a synthetic field.
