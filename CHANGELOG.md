@@ -1,14 +1,5 @@
 # Changelog
 
-## [3.3.0](https://github.com/shaka-project/eme_logger/compare/v3.2.0...v3.3.0) (2022-07-13)
-
-
-### Features
-
-* Manifest migration from v2 to v3
-
-
-
 ## [3.2.0](https://github.com/shaka-project/eme_logger/compare/v3.1.3...v3.2.0) (2022-02-03)
 
 
