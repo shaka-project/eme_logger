@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * @fileoverview Controls for the logging frame.
+ * @fileoverview Handles the button control events and appends logs for the actual log window.
  */
 document.addEventListener('DOMContentLoaded', function () {
   const clearButton = document.querySelector('#clear-button');

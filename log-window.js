@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * @fileoverview Implements the log window.
+ * @fileoverview Creates and communicates with the actual log window.
  */
 
 class EmeLogWindow {
@@ -70,7 +70,7 @@ class EmeLogWindow {
     this.textLogs_ = '';
   }
 
-  /** @param {Object} The text log. */
+  /** @param {string} The text log. */
   appendLog(textLog) {
     if (this.logWindow_) {
       this.textLogs_ += textLog;
@@ -84,7 +84,7 @@ EmeLogWindow.instance = new EmeLogWindow();
 // be present when this is run as a Chrome extension.
 if (chrome.runtime !== undefined) {
   /**
-   * When a window is closed, close the log window.
+   * When a window is closed, clear the handle and logs if it was the log window.
    */
   chrome.windows.onRemoved.addListener((windowId) => {
     EmeLogWindow.instance.close(windowId);
@@ -101,11 +101,9 @@ if (chrome.runtime !== undefined) {
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'EME_LOGGER_CLEAR') {
       EmeLogWindow.instance.clear();
-    }
-    else if (message.type === 'EME_LOGGER_GET_TEXT_LOGS') {
+    } else if (message.type === 'EME_LOGGER_GET_TEXT_LOGS') {
       sendResponse({ textLogs: EmeLogWindow.instance.getTextLogs() });
-    }
-    else if (message.type == 'EME_LOGGER_APPEND_LOG') {
+    } else if (message.type == 'EME_LOGGER_APPEND_LOG') {
       EmeLogWindow.instance.appendLog(message.data);
     }
   });

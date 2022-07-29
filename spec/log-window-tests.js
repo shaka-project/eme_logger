@@ -20,11 +20,13 @@ describe('Log window', () => {
   let mockDocument;
   let mockWindow;
   let mockLogElement;
+  let oldChromeWindows;
 
   beforeAll(() => {
     mockDocument = document.createElement('div');
     mockDocument.createElement = (name) => document.createElement(name);
     document.body.appendChild(mockDocument);
+    oldChromeWindows = chrome.windows;
 
     chrome = {
       windows: {
@@ -45,8 +47,11 @@ describe('Log window', () => {
         resolve(mockWindow)
       }));
 
-    spyOn(chrome.windows, 'update').and.callThrough();
     spyOn(chrome.runtime, 'getURL').and.returnValue('log.html');
+  });
+
+  afterAll(() => {
+    chrome.windows = oldChromeWindows;
   });
 
   beforeEach(() => {
@@ -72,36 +77,32 @@ describe('Log window', () => {
       }));
     });
 
-    it('reports the logging window is open', async function (done) {
+    it('reports the logging window is open', async function () {
       expect(EmeLogWindow.instance.isOpen()).toBe(false);
       await EmeLogWindow.instance.open();
       expect(EmeLogWindow.instance.isOpen()).toBe(true);
-      done();
     });
 
-    it('reports the logging window is closed', async function (done) {
+    it('reports the logging window is closed', async function () {
       await EmeLogWindow.instance.open();
       expect(EmeLogWindow.instance.isOpen()).toBe(true);
       EmeLogWindow.instance.close(mockWindow.id);
       expect(EmeLogWindow.instance.isOpen()).toBe(false);
-      done();
     });
   });
 
-  it('appends a text log', async function (done) {
+  it('appends a text log', async function () {
     await EmeLogWindow.instance.open();
     EmeLogWindow.instance.appendLog('text log 1');
     expect(EmeLogWindow.instance.getTextLogs()).toEqual('text log 1');
-    done();
   });
 
-  it('clears the text log', async function (done) {
+  it('clears the text log', async function () {
     await EmeLogWindow.instance.open();
     EmeLogWindow.instance.appendLog('text log 2');
     expect(EmeLogWindow.instance.getTextLogs()).toEqual(jasmine.any(String));
     EmeLogWindow.instance.clear();
     expect(EmeLogWindow.instance.getTextLogs()).toEqual('');
-    done();
   });
 
   it('logs with timestamps', () => {
