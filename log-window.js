@@ -95,7 +95,7 @@ if (chrome.runtime !== undefined) {
    * and bring it to the front otherwise.
    */
   chrome.action.onClicked.addListener(async (tab) => {
-    EmeLogWindow.instance.open();
+    await EmeLogWindow.instance.open();
   });
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

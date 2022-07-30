@@ -61,6 +61,7 @@ if (chrome.runtime !== undefined) {
  * @param {Object} The serialized log to format in HTML.
  * @return {string} The text log.
  */
+// TODO(joeyparrish): cleanup here, and I'll restructure/rename this part after this is merged.
 function appendLog(log) {
   const logElement = document.querySelector('#eme-log');
   const li = document.createElement('li');

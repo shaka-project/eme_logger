@@ -20,13 +20,13 @@ describe('Log window', () => {
   let mockDocument;
   let mockWindow;
   let mockLogElement;
-  let oldChromeWindows;
+  let oldWindowChrome;
 
   beforeAll(() => {
     mockDocument = document.createElement('div');
     mockDocument.createElement = (name) => document.createElement(name);
     document.body.appendChild(mockDocument);
-    oldChromeWindows = chrome.windows;
+    oldWindowChrome = window.chrome;
 
     chrome = {
       windows: {
@@ -42,7 +42,7 @@ describe('Log window', () => {
     };
 
     // Return the mock window when we are supposed to create one.
-    spyOn(chrome.windows, 'create').and.returnValue(
+    spyOn(window.chrome.windows, 'create').and.returnValue(
       new Promise((resolve, reject) => {
         resolve(mockWindow)
       }));
@@ -51,7 +51,7 @@ describe('Log window', () => {
   });
 
   afterAll(() => {
-    chrome.windows = oldChromeWindows;
+    window.chrome.windows = oldWindowChrome;
   });
 
   beforeEach(() => {
@@ -72,7 +72,7 @@ describe('Log window', () => {
   describe('Window handling', () => {
     it('opens the logging window', () => {
       EmeLogWindow.instance.open();
-      expect(chrome.windows.create).toHaveBeenCalledWith(new Object({
+      expect(window.chrome.windows.create).toHaveBeenCalledWith(new Object({
         url: 'log.html', type: 'popup', height: 600, width: 700
       }));
     });
