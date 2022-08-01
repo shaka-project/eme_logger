@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Google Inc.
+ * Copyright 2022 Google LLC.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,46 +18,17 @@
 
 describe('Log window', () => {
   let mockDocument;
-  let mockWindow;
   let mockLogElement;
-  let oldWindowChrome;
+  let mockClearButton;
+  let mockDownloadButton;
 
   beforeAll(() => {
     mockDocument = document.createElement('div');
     mockDocument.createElement = (name) => document.createElement(name);
     document.body.appendChild(mockDocument);
-    oldWindowChrome = window.chrome;
-
-    chrome = {
-      windows: {
-        create: () => { },
-        update: () => { },
-      },
-      runtime: {
-        getURL: () => { },
-      }
-    }
-    mockWindow = {
-      id: 1234567,
-    };
-
-    // Return the mock window when we are supposed to create one.
-    spyOn(window.chrome.windows, 'create').and.returnValue(
-      new Promise((resolve, reject) => {
-        resolve(mockWindow)
-      }));
-
-    spyOn(chrome.runtime, 'getURL').and.returnValue('log.html');
-  });
-
-  afterAll(() => {
-    window.chrome.windows = oldWindowChrome;
   });
 
   beforeEach(() => {
-    // Reset the singleton we're testing.
-    EmeLogWindow.instance = new EmeLogWindow();
-
     // Clear the contents of the document.
     while (mockDocument.firstChild) {
       mockDocument.firstChild.remove();
@@ -66,217 +37,181 @@ describe('Log window', () => {
     // Add the element where log items will go.
     mockLogElement = document.createElement('ul');
     mockLogElement.id = 'eme-log';
+    mockLogElement.style.display = 'none';
     mockDocument.appendChild(mockLogElement);
-  });
 
-  describe('Window handling', () => {
-    it('opens the logging window', () => {
-      EmeLogWindow.instance.open();
-      expect(window.chrome.windows.create).toHaveBeenCalledWith(new Object({
-        url: 'log.html', type: 'popup', height: 600, width: 700
-      }));
-    });
+    // Add mock button elements, which the singleton will expect.
+    mockClearButton = document.createElement('button');
+    mockClearButton.id = 'clear-button';
+    mockClearButton.style.display = 'none';
+    mockDocument.appendChild(mockClearButton);
 
-    it('reports the logging window is open', async function () {
-      expect(EmeLogWindow.instance.isOpen()).toBe(false);
-      await EmeLogWindow.instance.open();
-      expect(EmeLogWindow.instance.isOpen()).toBe(true);
-    });
+    mockDownloadButton = document.createElement('button');
+    mockDownloadButton.id = 'download-button';
+    mockDownloadButton.style.display = 'none';
+    mockDocument.appendChild(mockDownloadButton);
 
-    it('reports the logging window is closed', async function () {
-      await EmeLogWindow.instance.open();
-      expect(EmeLogWindow.instance.isOpen()).toBe(true);
-      EmeLogWindow.instance.close(mockWindow.id);
-      expect(EmeLogWindow.instance.isOpen()).toBe(false);
-    });
-  });
-
-  it('appends a text log', async function () {
-    await EmeLogWindow.instance.open();
-    EmeLogWindow.instance.appendLog('text log 1');
-    expect(EmeLogWindow.instance.getTextLogs()).toEqual('text log 1');
-  });
-
-  it('clears the text log', async function () {
-    await EmeLogWindow.instance.open();
-    EmeLogWindow.instance.appendLog('text log 2');
-    expect(EmeLogWindow.instance.getTextLogs()).toEqual(jasmine.any(String));
-    EmeLogWindow.instance.clear();
-    expect(EmeLogWindow.instance.getTextLogs()).toEqual('');
+    // Reset the singleton we're testing.
+    EmeLoggerWindow.instance = new EmeLoggerWindow();
   });
 
   it('logs with timestamps', () => {
     const date = new Date('July 20, 1969 12:34:56 UTC');
-    EmeLogWindow.instance.open();
-    EmeLogWindow.instance.appendLog(appendLog({
+    EmeLoggerWindow.instance.appendLog({
       timestamp: date.getTime(),
-    }));
+    });
     // Times are in the local user's timezone.  Without mocking that somehow,
     // we can only set expectations on the date format.
     expect(mockLogElement.querySelector('h3').textContent)
-      .toContain('Sun Jul 20 1969');
+        .toContain('Sun Jul 20 1969');
   });
 
   it('logs with durations', () => {
-    EmeLogWindow.instance.open();
-    EmeLogWindow.instance.appendLog(appendLog({
+    EmeLoggerWindow.instance.appendLog({
       timestamp: Date.now(),
       duration: 15,
-    }));
+    });
     expect(mockLogElement.querySelector('h3').textContent)
-      .toContain('duration: 15.0 ms');
+        .toContain('duration: 15.0 ms');
   });
 
   it('shows warnings', () => {
-    EmeLogWindow.instance.open();
-    EmeLogWindow.instance.appendLog(appendLog({
+    EmeLoggerWindow.instance.appendLog({
       timestamp: Date.now(),
       type: TraceAnything.LogTypes.Warning,
       message: 'Oh no!',
-    }));
+    });
 
     expect(mockLogElement.querySelector('.title').textContent)
-      .toContain('WARNING');
+        .toContain('WARNING');
     expect(mockLogElement.querySelector('.title').classList.contains('warning'))
-      .toBe(true);
+        .toBe(true);
     expect(mockLogElement.querySelector('.data').textContent)
-      .toContain('Oh no!');
+        .toContain('Oh no!');
   });
 
   describe('sets an appropriate title', () => {
-    beforeEach(() => {
-      EmeLogWindow.instance.open();
-    });
-
     it('for constructors', () => {
-      EmeLogWindow.instance.appendLog(appendLog({
+      EmeLoggerWindow.instance.appendLog({
         timestamp: Date.now(),
         type: TraceAnything.LogTypes.Constructor,
         className: 'SomeClass',
         args: [],
-      }));
+      });
       expect(mockLogElement.querySelector('.title').textContent)
-        .toContain('new SomeClass');
+          .toContain('new SomeClass');
     });
 
     it('for methods', () => {
-      EmeLogWindow.instance.appendLog(appendLog({
+      EmeLoggerWindow.instance.appendLog({
         timestamp: Date.now(),
         type: TraceAnything.LogTypes.Method,
         className: 'SomeClass',
         methodName: 'someMethod',
         args: [],
-      }));
+      });
       expect(mockLogElement.querySelector('.title').textContent)
-        .toContain('SomeClass.someMethod');
+          .toContain('SomeClass.someMethod');
     });
 
     it('for getters', () => {
-      EmeLogWindow.instance.appendLog(appendLog({
+      EmeLoggerWindow.instance.appendLog({
         timestamp: Date.now(),
         type: TraceAnything.LogTypes.Getter,
         className: 'SomeClass',
         memberName: 'someMember',
-      }));
+      });
       expect(mockLogElement.querySelector('.title').textContent)
-        .toContain('SomeClass.someMember');
+          .toContain('SomeClass.someMember');
     });
 
     it('for setters', () => {
-      EmeLogWindow.instance.appendLog(appendLog({
+      EmeLoggerWindow.instance.appendLog({
         timestamp: Date.now(),
         type: TraceAnything.LogTypes.Setter,
         className: 'SomeClass',
         memberName: 'someMember',
-      }));
+      });
       expect(mockLogElement.querySelector('.title').textContent)
-        .toContain('SomeClass.someMember');
+          .toContain('SomeClass.someMember');
     });
 
     it('for events', () => {
-      EmeLogWindow.instance.appendLog(appendLog({
+      EmeLoggerWindow.instance.appendLog({
         timestamp: Date.now(),
         type: TraceAnything.LogTypes.Event,
         className: 'SomeClass',
         eventName: 'someevent',
         event: fakeObjectWithType('Event', { type: 'someevent' }),
-      }));
+      });
       expect(mockLogElement.querySelector('.title').textContent)
-        .toContain('SomeClass someevent Event');
+          .toContain('SomeClass someevent Event');
     });
   });
 
   describe('formats event data', () => {
-    beforeEach(() => {
-      EmeLogWindow.instance.open();
-    });
-
     it('for events with falsey values', () => {
-      EmeLogWindow.instance.appendLog(appendLog({
+      EmeLoggerWindow.instance.appendLog({
         timestamp: Date.now(),
         type: TraceAnything.LogTypes.Event,
         className: 'SomeClass',
         eventName: 'someevent',
         event: fakeObjectWithType('Event', { type: 'someevent' }),
         value: 0,
-      }));
+      });
       expect(mockLogElement.querySelector('.data').textContent)
-        .toContain('Associated value: 0');
+          .toContain('Associated value: 0');
     });
 
     it('for events that are not Event objects', () => {
-      EmeLogWindow.instance.appendLog(appendLog({
+      EmeLoggerWindow.instance.appendLog({
         timestamp: Date.now(),
         type: TraceAnything.LogTypes.Event,
         className: 'SomeClass',
         eventName: 'someevent',
         event: {},
         value: 0,
-      }));
+      });
       expect(mockLogElement.querySelector('.data').textContent)
-        .toContain('SomeClass someevent Event instance');
+          .toContain('SomeClass someevent Event instance');
       expect(mockLogElement.querySelector('.data').textContent)
-        .toContain('Associated value: 0');
+          .toContain('Associated value: 0');
     });
   });
 
   describe('value formatting', () => {
-    beforeEach(() => {
-      EmeLogWindow.instance.open();
-    });
-
     function logResult(result) {
-      EmeLogWindow.instance.appendLog(appendLog({
+      EmeLoggerWindow.instance.appendLog({
         timestamp: Date.now(),
         type: TraceAnything.LogTypes.Getter,
         className: 'SomeClass',
         memberName: 'someMember',
         result,
-      }));
+      });
     }
 
     it('builds a formatted string from a undefined value', () => {
       logResult(undefined);
       expect(mockLogElement.querySelector('.data').textContent)
-        .toContain('=> undefined');
+          .toContain('=> undefined');
     });
 
     it('builds a formatted string from a number', () => {
       logResult(12345);
       expect(mockLogElement.querySelector('.data').textContent)
-        .toContain('=> 12345');
+          .toContain('=> 12345');
     });
 
     it('builds a formatted string from a boolean', () => {
       logResult(true);
       expect(mockLogElement.querySelector('.data').textContent)
-        .toContain('=> true');
+          .toContain('=> true');
     });
 
     it('builds a formatted string from null', () => {
       logResult(null);
       expect(mockLogElement.querySelector('.data').textContent)
-        .toContain('=> null');
+          .toContain('=> null');
     });
 
     it('builds a formatted string from an array', () => {
@@ -304,7 +239,7 @@ describe('Log window', () => {
     it('builds a formatted string from a Uint8Array', () => {
       const array = [12, 34, 12, 65, 34, 634, 78, 324, 54, 23, 53];
       logResult(fakeObjectWithType(
-        'Uint8Array', /* fields= */ null, /* data= */ array));
+          'Uint8Array', /* fields= */ null, /* data= */ array));
 
       const text = mockLogElement.querySelector('.data').textContent;
       expect(text).toContain('=> Uint8Array instance [\n');

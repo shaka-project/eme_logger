@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Google Inc.
+ * Copyright 2022 Google LLC.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,10 +30,14 @@ for (const url of urls) {
   (document.head || document.documentElement).appendChild(script);
 }
 
-// Listen for message events posted from EmeListeners, then forwards
-// message to the background page.
+// Listen for message events posted from eme-trace-config, then forward the
+// log to the log window.  If the log window is closed, this message gets
+// dropped.
 window.addEventListener('message', (event) => {
   if (event.data.type == 'emeTraceLog') {
-    chrome.runtime.sendMessage({ log: event.data.log });
+    chrome.runtime.sendMessage({
+      type: 'EME_LOGGER_TRACE',
+      log: event.data.log,
+    });
   }
 });
