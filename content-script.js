@@ -19,7 +19,7 @@
 // Load required scripts into the current web page.
 const urls = ['/trace-anything.js', '/eme-trace-config.js'];
 for (const url of urls) {
-  const absoluteUrl = chrome.extension.getURL(url);
+  const absoluteUrl = chrome.runtime.getURL(url);
 
   // Insert a script tag and force it to load synchronously.
   const script = document.createElement('script');
@@ -34,6 +34,6 @@ for (const url of urls) {
 // message to the background page.
 window.addEventListener('message', (event) => {
   if (event.data.type == 'emeTraceLog') {
-    chrome.runtime.sendMessage({log: event.data.log});
+    chrome.runtime.sendMessage({ log: event.data.log });
   }
 });
