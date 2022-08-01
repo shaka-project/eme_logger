@@ -28,7 +28,7 @@ describe('Log window', () => {
     document.body.appendChild(mockDocument);
     oldWindowChrome = window.chrome;
 
-    chrome = {
+    window.chrome = {
       windows: {
         create: () => { },
         update: () => { },
@@ -51,7 +51,7 @@ describe('Log window', () => {
   });
 
   afterAll(() => {
-    window.chrome.windows = oldWindowChrome;
+    window.chrome = oldWindowChrome;
   });
 
   beforeEach(() => {
