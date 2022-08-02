@@ -26,7 +26,7 @@
     "128": "icons/EME_logo_128.png"
   },
   "background": {
-    "service_worker": "log-window.js",
+    "service_worker": "service-worker.js",
     "type": "module"
   },
   "action": {
