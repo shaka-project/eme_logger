@@ -9,7 +9,7 @@
     "json5": "^2.2.2"
   },
   "dependencies": {
-    "trace-anything": "^1.0.1"
+    "trace-anything": "^1.0.2"
   },
   "scripts": {
     "build": "npm ci && gulp",
