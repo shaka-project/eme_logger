@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.3.0](https://github.com/shaka-project/eme_logger/compare/v3.2.0...v3.3.0) (2023-01-10)
+
+
+### Features
+
+* EME Logger Manifest V3 Migration ([#51](https://github.com/shaka-project/eme_logger/issues/51)) ([c860eba](https://github.com/shaka-project/eme_logger/commit/c860eba6328bc51518684e930d01b965ce489e3f))
+
+
+### Bug Fixes
+
+* Display keystatuseschange.expiration as a Date ([#48](https://github.com/shaka-project/eme_logger/issues/48)) ([d5d15f6](https://github.com/shaka-project/eme_logger/commit/d5d15f621aac0d84466c8d44ff02fb806db40ca5)), closes [#42](https://github.com/shaka-project/eme_logger/issues/42)
+* Remove all variables and most functions from global scope ([#61](https://github.com/shaka-project/eme_logger/issues/61)) ([3b8ed85](https://github.com/shaka-project/eme_logger/commit/3b8ed85f6ef31a857f074013985e9b2747143519)), closes [#44](https://github.com/shaka-project/eme_logger/issues/44)
+
 ## [3.2.0](https://github.com/shaka-project/eme_logger/compare/v3.1.3...v3.2.0) (2022-02-03)
 
 
