@@ -45,6 +45,18 @@ class EmeLoggerWindow {
         filename: 'EMELogFile.txt'
       });
     });
+
+    // Default to hex first as that is what is selected.
+    sessionStorage.setItem("toggle", "hex");
+    let contact = document.querySelectorAll('input[name="radio-toggle-group"]');
+
+    /** @private {!HTMLInputElement} */
+    for (let i = 0; i < contact.length; i++) {
+        contact[i].addEventListener("change", function() {
+        let val = this.value;
+        sessionStorage.setItem("toggle", this.value);
+      });
+}
   }
 
   /**
@@ -159,6 +171,23 @@ class EmeLoggerWindow {
   }
 
   /**
+   * @param {number} byte
+   * @return {string}
+   * @private
+   */
+  bytesToBase64_(bytes) {
+    return btoa(String.fromCharCode.apply(null,new Uint8Array(bytes)));
+  }
+
+  /**
+   * @return {string}
+   * @private
+   */
+  toggleStoredInSessionStorage_() {
+    return sessionStorage.getItem("toggle");
+  }
+
+  /**
    * @param {*} obj
    * @param {string} indentation
    * @return {string}
@@ -186,12 +215,21 @@ class EmeLoggerWindow {
           format += '[]';
         } else {
           format += ' ' + '[\n';
-          while (data.length) {
-            const row = data.splice(0, 16);
-            format += indentation + '  ';
-            format += row.map(this.byteToHex_).join(', ');
-            format += ',\n';
-          }
+          if(this.toggleStoredInSessionStorage_() == "hex"){
+              while (data.length) {
+                  console.log(data);
+                  const row = data.splice(0, 16);
+                  format += indentation + '  ';
+                  format += row.map(this.byteToHex_).join(', ');
+                  format += ',\n';
+                }
+            } else {
+                const base64data = this.bytesToBase64_(data).split(/(.{97})/).filter(O=>O);
+                base64data.forEach(base64chunk => {
+                  format += base64chunk;
+                  format += '\n';
+                })
+              }
           format += indentation + ']';
         }
       }
