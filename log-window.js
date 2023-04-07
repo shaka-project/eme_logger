@@ -217,7 +217,6 @@ class EmeLoggerWindow {
           format += ' ' + '[\n';
           if(this.toggleStoredInSessionStorage_() == "hex"){
               while (data.length) {
-                  console.log(data);
                   const row = data.splice(0, 16);
                   format += indentation + '  ';
                   format += row.map(this.byteToHex_).join(', ');
