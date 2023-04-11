@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.0](https://github.com/shaka-project/eme_logger/compare/v3.3.0...v3.4.0) (2023-04-11)
+
+
+### Features
+
+* Add a toggle between hex and base64 ([#62](https://github.com/shaka-project/eme_logger/issues/62)) ([7fa1a98](https://github.com/shaka-project/eme_logger/commit/7fa1a98bf2fff51f6bb87593bb173b5f87badf68))
+
 ## [3.3.0](https://github.com/shaka-project/eme_logger/compare/v3.2.0...v3.3.0) (2023-01-10)
 
 
