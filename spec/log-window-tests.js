@@ -21,6 +21,8 @@ describe('Log window', () => {
   let mockLogElement;
   let mockClearButton;
   let mockDownloadButton;
+  let mockToggleToHexRadioButton;
+  let mockToggleToBase64RadioButton;
 
   beforeAll(() => {
     mockDocument = document.createElement('div');
@@ -50,6 +52,22 @@ describe('Log window', () => {
     mockDownloadButton.id = 'download-button';
     mockDownloadButton.style.display = 'none';
     mockDocument.appendChild(mockDownloadButton);
+
+    // Add mock radio
+    mockToggleToHexRadioButton = document.createElement('input');
+    mockToggleToHexRadioButton.checked = 'true';
+    mockToggleToHexRadioButton.type = 'radio';
+    mockToggleToHexRadioButton.id = 'hex-radio-input';
+    mockToggleToHexRadioButton.name = 'radio-toggle-group';
+    mockToggleToHexRadioButton.value = 'hex';
+    mockDocument.appendChild(mockToggleToHexRadioButton);
+
+    mockToggleToBase64RadioButton = document.createElement('input');
+    mockToggleToBase64RadioButton.type = 'radio';
+    mockToggleToBase64RadioButton.id = 'base64-radio-input';
+    mockToggleToBase64RadioButton.name = 'radio-toggle-group';
+    mockToggleToBase64RadioButton.value = 'base64';
+    mockDocument.appendChild(mockToggleToBase64RadioButton);
 
     // Reset the singleton we're testing.
     EmeLoggerWindow.instance = new EmeLoggerWindow();
@@ -142,7 +160,7 @@ describe('Log window', () => {
         type: TraceAnything.LogTypes.Event,
         className: 'SomeClass',
         eventName: 'someevent',
-        event: fakeObjectWithType('Event', { type: 'someevent' }),
+        event: fakeObjectWithType('Event', {type: 'someevent'}),
       });
       expect(mockLogElement.querySelector('.title').textContent)
           .toContain('SomeClass someevent Event');
@@ -156,7 +174,7 @@ describe('Log window', () => {
         type: TraceAnything.LogTypes.Event,
         className: 'SomeClass',
         eventName: 'someevent',
-        event: fakeObjectWithType('Event', { type: 'someevent' }),
+        event: fakeObjectWithType('Event', {type: 'someevent'}),
         value: 0,
       });
       expect(mockLogElement.querySelector('.data').textContent)
@@ -289,6 +307,43 @@ describe('Log window', () => {
       const objectText = text.split('=> MediaKeySession instance ')[1];
       expect(JSON5.parse(objectText)).toEqual(fields);
     });
+
+    it('builds a formatted string with Hex', () => {
+      const fakeLicenseResponse = 23;
+      const fakeLicenseResponseInHex = byteToHex_(fakeLicenseResponse);
+
+      const fieldsHex = {
+        type: TraceAnything.LogTypes.Method,
+        className: 'MediaKeySession',
+        methodName: 'update',
+        args: [fakeLicenseResponseInHex],
+      };
+      const objectHex = fakeObjectWithType('MediaKeySession', fieldsHex);
+      logResult(objectHex);
+
+      const textWithHex = mockLogElement.querySelector('.data').textContent;
+
+      // 23 in decimal -> hex is 0x17.
+      expect(textWithHex).toContain('0x17');
+    });
+
+    it('builds a formatted string with Base64', () => {
+      const fakeLicenseResponse = new Uint8Array([23]);
+      const fakeLicenseResponseInBase64 = bytesToBase64_(fakeLicenseResponse);
+      const fieldsBase64 = {
+        type: TraceAnything.LogTypes.Method,
+        className: 'MediaKeySession',
+        methodName: 'update',
+        args: [fakeLicenseResponseInBase64],
+      };
+      const objectBase64 = fakeObjectWithType('MediaKeySession', fieldsBase64);
+      logResult(objectBase64);
+
+      const textWithBase64 = mockLogElement.querySelector('.data').textContent;
+
+      // 23 in decimal -> base64 is 'Fw=='.
+      expect(textWithBase64).toContain('Fw==');
+    });
   });
 
   // This matches the format used in function emeLogger() in
@@ -311,5 +366,25 @@ describe('Log window', () => {
     }
 
     return obj;
+  }
+
+  // These functions are private in log-window.js so we have to copy them to use
+  // here.
+  /**
+   * @param {number} byte
+   * @return {string}
+   * @private
+   */
+  function byteToHex_(byte) {
+    return '0x' + byte.toString(16).padStart(2, '0');
+  }
+
+  /**
+   * @param {number} byte
+   * @return {string}
+   * @private
+   */
+  function bytesToBase64_(bytes) {
+    return btoa(String.fromCharCode.apply(null, new Uint8Array(bytes)));
   }
 });

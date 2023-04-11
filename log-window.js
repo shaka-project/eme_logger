@@ -37,26 +37,24 @@ class EmeLoggerWindow {
     this.downloadButton_ = document.querySelector('#download-button');
     this.downloadButton_.addEventListener('click', () => {
       // Format the logs into a Blob.
-      const blob = new Blob([this.textLogs_], { type: 'text/plain' });
+      const blob = new Blob([this.textLogs_], {type: 'text/plain'});
 
       // Trigger a download.
-      chrome.downloads.download({
-        url: URL.createObjectURL(blob),
-        filename: 'EMELogFile.txt'
-      });
+      chrome.downloads.download(
+          {url: URL.createObjectURL(blob), filename: 'EMELogFile.txt'});
     });
 
     // Default to hex first as that is what is selected.
-    sessionStorage.setItem("toggle", "hex");
+    sessionStorage.setItem('toggle', 'hex');
     let contact = document.querySelectorAll('input[name="radio-toggle-group"]');
 
     /** @private {!HTMLInputElement} */
     for (let i = 0; i < contact.length; i++) {
-        contact[i].addEventListener("change", function() {
+      contact[i].addEventListener('change', function() {
         let val = this.value;
-        sessionStorage.setItem("toggle", this.value);
+        sessionStorage.setItem('toggle', this.value);
       });
-}
+    }
   }
 
   /**
@@ -155,10 +153,8 @@ class EmeLoggerWindow {
     }
 
     // TODO: Keep an array of blobs instead?  More efficient for large logs?
-    this.textLogs_ +=
-        formattedTimestamp + '\n\n' +
-        instanceId.textContent + '\n' +
-        data.textContent + '\n\n\n\n';
+    this.textLogs_ += formattedTimestamp + '\n\n' + instanceId.textContent +
+        '\n' + data.textContent + '\n\n\n\n';
   }
 
   /**
@@ -176,7 +172,7 @@ class EmeLoggerWindow {
    * @private
    */
   bytesToBase64_(bytes) {
-    return btoa(String.fromCharCode.apply(null,new Uint8Array(bytes)));
+    return btoa(String.fromCharCode.apply(null, new Uint8Array(bytes)));
   }
 
   /**
@@ -184,7 +180,7 @@ class EmeLoggerWindow {
    * @private
    */
   toggleStoredInSessionStorage_() {
-    return sessionStorage.getItem("toggle");
+    return sessionStorage.getItem('toggle');
   }
 
   /**
@@ -214,21 +210,23 @@ class EmeLoggerWindow {
         if (data.length == 0) {
           format += '[]';
         } else {
-          format += ' ' + '[\n';
-          if(this.toggleStoredInSessionStorage_() == "hex"){
-              while (data.length) {
-                  const row = data.splice(0, 16);
-                  format += indentation + '  ';
-                  format += row.map(this.byteToHex_).join(', ');
-                  format += ',\n';
-                }
-            } else {
-                const base64data = this.bytesToBase64_(data).split(/(.{97})/).filter(O=>O);
-                base64data.forEach(base64chunk => {
-                  format += base64chunk;
-                  format += '\n';
-                })
-              }
+          format += ' ' +
+              '[\n';
+          if (this.toggleStoredInSessionStorage_() == 'hex') {
+            while (data.length) {
+              const row = data.splice(0, 16);
+              format += indentation + '  ';
+              format += row.map(this.byteToHex_).join(', ');
+              format += ',\n';
+            }
+          } else {
+            const base64data =
+                this.bytesToBase64_(data).split(/(.{97})/).filter(O => O);
+            base64data.forEach(base64chunk => {
+              format += base64chunk;
+              format += '\n';
+            })
+          }
           format += indentation + ']';
         }
       }
