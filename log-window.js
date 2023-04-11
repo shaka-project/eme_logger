@@ -160,18 +160,16 @@ class EmeLoggerWindow {
   /**
    * @param {number} byte
    * @return {string}
-   * @private
    */
-  byteToHex_(byte) {
+  byteToHex(byte) {
     return '0x' + byte.toString(16).padStart(2, '0');
   }
 
   /**
    * @param {number} byte
    * @return {string}
-   * @private
    */
-  bytesToBase64_(bytes) {
+  bytesToBase64(bytes) {
     return btoa(String.fromCharCode.apply(null, new Uint8Array(bytes)));
   }
 
@@ -216,12 +214,12 @@ class EmeLoggerWindow {
             while (data.length) {
               const row = data.splice(0, 16);
               format += indentation + '  ';
-              format += row.map(this.byteToHex_).join(', ');
+              format += row.map(this.byteToHex).join(', ');
               format += ',\n';
             }
           } else {
             const base64data =
-                this.bytesToBase64_(data).split(/(.{97})/).filter(O => O);
+                this.bytesToBase64(data).split(/(.{97})/).filter(O => O);
             base64data.forEach(base64chunk => {
               format += base64chunk;
               format += '\n';

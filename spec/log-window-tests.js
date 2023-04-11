@@ -310,7 +310,8 @@ describe('Log window', () => {
 
     it('builds a formatted string with Hex', () => {
       const fakeLicenseResponse = 23;
-      const fakeLicenseResponseInHex = byteToHex_(fakeLicenseResponse);
+      const fakeLicenseResponseInHex =
+          EmeLoggerWindow.instance.byteToHex(fakeLicenseResponse);
 
       const fieldsHex = {
         type: TraceAnything.LogTypes.Method,
@@ -329,7 +330,8 @@ describe('Log window', () => {
 
     it('builds a formatted string with Base64', () => {
       const fakeLicenseResponse = new Uint8Array([23]);
-      const fakeLicenseResponseInBase64 = bytesToBase64_(fakeLicenseResponse);
+      const fakeLicenseResponseInBase64 =
+          EmeLoggerWindow.instance.bytesToBase64(fakeLicenseResponse);
       const fieldsBase64 = {
         type: TraceAnything.LogTypes.Method,
         className: 'MediaKeySession',
@@ -366,25 +368,5 @@ describe('Log window', () => {
     }
 
     return obj;
-  }
-
-  // These functions are private in log-window.js so we have to copy them to use
-  // here.
-  /**
-   * @param {number} byte
-   * @return {string}
-   * @private
-   */
-  function byteToHex_(byte) {
-    return '0x' + byte.toString(16).padStart(2, '0');
-  }
-
-  /**
-   * @param {number} byte
-   * @return {string}
-   * @private
-   */
-  function bytesToBase64_(bytes) {
-    return btoa(String.fromCharCode.apply(null, new Uint8Array(bytes)));
   }
 });
