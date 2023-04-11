@@ -30,6 +30,30 @@
   right: 10px;
 }
 
+#base64-radio-input {
+  position: fixed;
+  top: 70px;
+  right: 10px;
+}
+
+#base64-radio-input-label {
+  position: fixed;
+  top: 70px;
+  right: 40px;
+}
+
+#hex-radio-input {
+  position: fixed;
+  top: 100px;
+  right: 10px;
+}
+
+#hex-radio-input-label {
+  position: fixed;
+  top: 100px;
+  right: 40px;
+}
+
 h3 {
   padding-top: 1em;
 }
@@ -58,6 +82,10 @@ h3 {
     <p>Some personally identifiable information may be in the log. Be careful about posting the log on bug reports.</p>
     <button id="clear-button">Clear log</button>
     <a id="download-button" download="EMELogFile.txt"><button>Download log</button></a>
+    <input type="radio" id="hex-radio-input" name="radio-toggle-group" value = "hex" checked>
+    <label for="hex" id="hex-radio-input-label">Hex</label>
+    <input type="radio" id="base64-radio-input" name="radio-toggle-group" value = "base64">
+    <label for="base64" id="base64-radio-input-label">Base64</label>
     <ul id="eme-log"></ul>
   </body>
 </html>
