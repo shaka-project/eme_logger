@@ -1,6 +1,6 @@
 {
   "devDependencies": {
-    "chromedriver": "^95.0.0",
+    "chromedriver": "^122.0.5",
     "gulp": "^4.0.2",
     "gulp-rename": "^2.0.0",
     "gulp-zip": "^5.1.0",
