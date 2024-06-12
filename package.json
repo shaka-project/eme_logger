@@ -1,7 +1,7 @@
 {
   "devDependencies": {
     "chromedriver": "^122.0.5",
-    "gulp": "^4.0.2",
+    "gulp": "^5.0.0",
     "gulp-rename": "^2.0.0",
     "gulp-zip": "^5.1.0",
     "jasmine-browser-runner": "^1.2.0",
