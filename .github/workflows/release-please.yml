@@ -13,7 +13,10 @@ jobs:
         id: release
         with:
           release-type: node
-      - uses: actions/checkout@v2
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.after }}
 
       # If we didn't create a release, we may have created or updated a PR.
       - run: |
@@ -42,8 +45,10 @@ jobs:
           node-version: 12
           registry-url: 'https://registry.npmjs.org'
         if: ${{ steps.release.outputs.release_created }}
+
       - run: npm run build
         if: ${{ steps.release.outputs.release_created }}
+
       - uses: svenstaro/upload-release-action@483c1e56f95e88835747b1c7c60581215016cbf2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
