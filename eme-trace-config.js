@@ -447,8 +447,29 @@ const EmeLogHelper = {
 
     // And these specific events are VERY noisy.  Skip them.
     skipEvents : [
+      'durationchange',
+      'loadedmetadata',
+      'mousedown',
+      'mouseenter',
+      'mouseleave',
+      'mousemove',
+      'mouseout',
+      'mouseover',
+      'mouseup',
+      'mousewheel',
+      'pointercancel',
+      'pointerdown',
+      'pointerenter',
+      'pointerleave',
+      'pointermove',
+      'pointerout',
+      'pointerover',
+      'pointerrawupdate',
+      'pointerup',
       'progress',
+      'resize',
       'timeupdate',
+      'wheel',
     ],
 
     // Methods we don't care about on media elements:
