@@ -9,51 +9,28 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
-      - uses: google-github-actions/release-please-action@v3
+      - uses: googleapis/release-please-action@v4
         id: release
         with:
-          release-type: node
-
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.after }}
-
-      # If we didn't create a release, we may have created or updated a PR.
-      - run: |
-          # Check out the branch that release-please created, if it exists.
-          git fetch
-          git checkout release-please--branches--main || exit 0
-          # If it does exist, update manifest.json in the PR branch.
-          # release-please can't update it for us yet.  See:
-          # https://github.com/googleapis/release-please/issues/1171
-          VERSION=$(jq -r .version package.json)
-          cp manifest.json manifest.json.orig
-          jq -r ".version = \"$VERSION\"" manifest.json.orig > manifest.json
-          git add manifest.json
-          # Emulate the author of the existing commit (the bot).
-          git config user.email "$(git log -n 1 --format='%ae')"
-          git config user.name "$(git log -n 1 --format='%an')"
-          # Update the PR.
-          git commit --amend --no-edit
-          git push -f
-        if: ${{ ! steps.release.outputs.release_created }}
+          # Use a special shaka-bot access token for releases.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          # See also settings in these files:
+          manifest-file: .release-please-manifest.json
+          config-file: .release-please-config.json
 
       # If we did create a release, we should attach the extension's zip file
       # to it.
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v4
         with:
-          node-version: 12
-          registry-url: 'https://registry.npmjs.org'
+          ref: ${{ github.event.after }}
         if: ${{ steps.release.outputs.release_created }}
 
       - run: npm run build
         if: ${{ steps.release.outputs.release_created }}
 
-      - uses: svenstaro/upload-release-action@483c1e56f95e88835747b1c7c60581215016cbf2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ steps.release.outputs.tag_name }}
-          file: eme_logger-*.zip
-          file_glob: true
-          overwrite: true
+      - name: Attach files to release
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+        run: |
+          gh release upload --clobber "${{ steps.release.outputs.tag_name }}" eme_logger-*.zip
         if: ${{ steps.release.outputs.release_created }}
