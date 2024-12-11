@@ -4,8 +4,7 @@
     "gulp": "^5.0.0",
     "gulp-rename": "^2.0.0",
     "gulp-zip": "^5.1.0",
-    "jasmine-browser-runner": "^1.2.0",
-    "jasmine-core": "^3.10.1",
+    "jasmine-browser-runner": "^2.5.0",
     "json5": "^2.2.2"
   },
   "dependencies": {
