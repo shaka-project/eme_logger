@@ -23,6 +23,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.after }}
+          persist-credentials: false
         if: ${{ steps.release.outputs.release_created }}
 
       - run: npm run build
