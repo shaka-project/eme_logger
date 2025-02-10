@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.1](https://github.com/shaka-project/eme_logger/compare/v3.4.0...v3.4.1) (2024-12-20)
+
+
+### Bug Fixes
+
+* Skip noisy mouse events ([#84](https://github.com/shaka-project/eme_logger/issues/84)) ([980e8d4](https://github.com/shaka-project/eme_logger/commit/980e8d49c828777675e2a5c572a2c38469d439ff)), closes [#65](https://github.com/shaka-project/eme_logger/issues/65)
+
 ## [3.4.0](https://github.com/shaka-project/eme_logger/compare/v3.3.0...v3.4.0) (2023-04-11)
 
 
