@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.2](https://github.com/shaka-project/eme_logger/compare/v3.4.1...v3.4.2) (2025-02-26)
+
+
+### Bug Fixes
+
+* Update gulpfile to set image encoding as false ([#92](https://github.com/shaka-project/eme_logger/issues/92)) ([8c9a967](https://github.com/shaka-project/eme_logger/commit/8c9a9670d95a260e94e96a1acba5fc54f960725f))
+
 ## [3.4.1](https://github.com/shaka-project/eme_logger/compare/v3.4.0...v3.4.1) (2024-12-20)
 
 
