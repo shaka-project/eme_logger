@@ -34,7 +34,7 @@ function packageExtension() {
     '*.html',
     '*.js',
     '!gulpfile.js',
-  ], {base: './'});
+  ], {base: './', encoding: false});
 
   return sources
       .pipe(rename((path) => {
