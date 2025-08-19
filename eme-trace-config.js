@@ -479,6 +479,7 @@ const EmeLogHelper = {
       'querySelector',
       'querySelectorAll',
       'getVideoPlaybackQuality',
+      'onclick',
     ]),
 
     eventProperties : {
