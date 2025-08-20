@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.3](https://github.com/shaka-project/eme_logger/compare/v3.4.2...v3.4.3) (2025-08-19)
+
+
+### Bug Fixes
+
+* Skip onclick in EME Logger ([#98](https://github.com/shaka-project/eme_logger/issues/98)) ([d06f01e](https://github.com/shaka-project/eme_logger/commit/d06f01e4269c02ceb9ce1d1a6a9b6f534411b33e))
+
 ## [3.4.2](https://github.com/shaka-project/eme_logger/compare/v3.4.1...v3.4.2) (2025-02-26)
 
 
