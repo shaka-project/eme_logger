@@ -36,7 +36,7 @@ function emeLogger(log) {
     // object here.  So clone it, and replace the message field of that.
     log.event = EmeLogHelper.cloneEvent(log.event, {
       // This overrides the message field with a new value from the formatter.
-      message : EmeLogHelper.formatEmeRequest(log.event.message),
+      message: EmeLogHelper.formatEmeRequest(log.event.message),
     });
   } else if (log.type == TraceAnything.LogTypes.Method &&
       log.className == 'MediaKeys' &&
@@ -57,7 +57,7 @@ function emeLogger(log) {
   delete log.instance;
 
   window.postMessage(
-      {type : 'emeTraceLog', log : EmeLogHelper.prepLogForMessage(log)}, '*');
+      {type: 'emeTraceLog', log: EmeLogHelper.prepLogForMessage(log)}, '*');
 }
 
 // Define functions in a single object to avoid polluting the global namespace.
@@ -74,7 +74,7 @@ const EmeLogHelper = {
    * @param {Object=} overrides
    * @return {!Event}
    */
-  cloneEvent : function(original, overrides) {
+  cloneEvent: function(original, overrides) {
     const clone = {};
 
     // When reading the original, we must use a for-in loop to see all fields.
@@ -102,7 +102,7 @@ const EmeLogHelper = {
    * @param {BufferSource} response
    * @return {(string|!Object|BufferSource)}
    */
-  formatEmeResponse : function(response) {
+  formatEmeResponse: function(response) {
     if (!response || !document.emeFormatters) {
       return response;
     }
@@ -120,7 +120,7 @@ const EmeLogHelper = {
         if (formattedResponse) {
           return formattedResponse;
         }
-      } catch (exception) {
+      } catch {
       } // Ignore, move on to the next formatter.
     }
 
@@ -132,7 +132,7 @@ const EmeLogHelper = {
    * @param {BufferSource} request
    * @return {(string|!Object|BufferSource)}
    */
-  formatEmeRequest : function(request) {
+  formatEmeRequest: function(request) {
     if (!request || !document.emeFormatters) {
       return request;
     }
@@ -150,7 +150,7 @@ const EmeLogHelper = {
         if (formattedRequest) {
           return formattedRequest;
         }
-      } catch (exception) {
+      } catch {
       } // Ignore, move on to the next formatter.
     }
 
@@ -162,7 +162,7 @@ const EmeLogHelper = {
    * @param {BufferSource} certificate
    * @return {(string|!Object|BufferSource)}
    */
-  formatEmeCertificate : function(certificate) {
+  formatEmeCertificate: function(certificate) {
     if (!certificate || !document.emeFormatters) {
       return certificate;
     }
@@ -178,7 +178,7 @@ const EmeLogHelper = {
         if (formattedCertificate) {
           return formattedCertificate;
         }
-      } catch (exception) {
+      } catch {
       } // Ignore, move on to the next formatter.
     }
 
@@ -191,7 +191,7 @@ const EmeLogHelper = {
    * @param {BufferSource} initData
    * @return {(string|!Object|BufferSource)}
    */
-  formatEmeInitData : function(initDataType, initData) {
+  formatEmeInitData: function(initDataType, initData) {
     if (!initData || !document.emeFormatters) {
       return initData;
     }
@@ -207,7 +207,7 @@ const EmeLogHelper = {
         if (formattedInitData) {
           return formattedInitData;
         }
-      } catch (exception) {
+      } catch {
       } // Ignore, move on to the next formatter.
     }
 
@@ -219,10 +219,10 @@ const EmeLogHelper = {
    * @param {Object} log
    * @return {Object}
    */
-  prepLogForMessage : function(log) {
+  prepLogForMessage: function(log) {
     const clone = {};
-    for (const k in log) {
-      clone[k] = EmeLogHelper.getSerializable(log[k]);
+    for (const [k, v] of Object.entries(log)) {
+      clone[k] = EmeLogHelper.getSerializable(v);
     }
     return clone;
   },
@@ -231,7 +231,7 @@ const EmeLogHelper = {
    * @param {*} obj A value that may or may not be serializable.
    * @return {*} A value that can be serialized.
    */
-  getSerializable : function(obj) {
+  getSerializable: function(obj) {
     // Return primitive types directly.
     if (obj == null || typeof obj == 'string' || typeof obj == 'number' ||
         typeof obj == 'boolean') {
@@ -249,8 +249,8 @@ const EmeLogHelper = {
         }
       }
       return {
-        __type__ : obj.type + ' Event',
-        __fields__ : clone,
+        __type__: obj.type + ' Event',
+        __fields__: clone,
       };
     }
 
@@ -258,17 +258,17 @@ const EmeLogHelper = {
     // contain many fields and circular references.
     if (obj instanceof Element) {
       return {
-        __type__ : '<' + obj.tagName.toLowerCase() + '> element',
+        __type__: '<' + obj.tagName.toLowerCase() + '> element',
       };
     }
     if (obj instanceof Node) {
       return {
-        __type__ : obj.nodeName.toLowerCase() + ' node',
+        __type__: obj.nodeName.toLowerCase() + ' node',
       };
     }
     if (obj instanceof Window) {
       return {
-        __type__ : 'Window',
+        __type__: 'Window',
       };
     }
 
@@ -279,8 +279,8 @@ const EmeLogHelper = {
     }
     if (ArrayBuffer.isView(obj)) {
       return {
-        __type__ : obj.constructor.name,
-        __data__ : Array.from(obj),
+        __type__: obj.constructor.name,
+        __data__: Array.from(obj),
       };
     }
 
@@ -292,7 +292,7 @@ const EmeLogHelper = {
             EmeLogHelper.uint8ArrayToHexString(new Uint8Array(arrayBuffer));
         statuses[keyId] = status;
       });
-      return { __type__: obj.constructor.name, __fields__: statuses, }
+      return {__type__: obj.constructor.name, __fields__: statuses};
     }
 
     // DOMExceptions don't serialize right if done generically.  None of their
@@ -300,11 +300,11 @@ const EmeLogHelper = {
     // serializing other typed objects.
     if (obj instanceof DOMException) {
       return {
-        __type__ : 'DOMException',
-        __fields__ : {
-          name : obj.name,
-          code : obj.code,
-          message : obj.message,
+        __type__: 'DOMException',
+        __fields__: {
+          name: obj.name,
+          code: obj.code,
+          message: obj.message,
         },
       };
     }
@@ -318,7 +318,7 @@ const EmeLogHelper = {
     if (obj instanceof TimeRanges) {
       const clone = [];
       for (let i = 0; i < obj.length; i++) {
-        clone[i] = [ obj.start(i), obj.end(i) ];
+        clone[i] = [obj.start(i), obj.end(i)];
       }
       return clone;
     }
@@ -328,7 +328,7 @@ const EmeLogHelper = {
       const clone = [];
       for (const k in obj) {
         if (typeof obj[k] == 'function') {
-          clone[k] = {__type__ : 'function'};
+          clone[k] = {__type__: 'function'};
         } else {
           clone[k] = EmeLogHelper.getSerializable(obj[k]);
         }
@@ -359,19 +359,20 @@ const EmeLogHelper = {
     if (obj.constructor != Object) {
       // If it's an object with a type, send that info, too.
       return {
-        __type__ : obj.constructor.name,
-        __fields__ : clone,
+        __type__: obj.constructor.name,
+        __fields__: clone,
       };
     }
     return clone;
   },
 
-  byteToHexString : function(
-      byte) { return byte.toString(16).padStart(2, '0'); },
+  byteToHexString: function(byte) {
+    return byte.toString(16).padStart(2, '0');
+  },
 
-  uint8ArrayToHexString : function(view) {
+  uint8ArrayToHexString: function(view) {
     return Array.from(view).map(EmeLogHelper.byteToHexString).join('');
-  }
+  },
 };
 
 (() => {
@@ -379,15 +380,15 @@ const EmeLogHelper = {
   const options = {
     // When formatting logs and sending them as serialized messages, we need to
     // wait for async results to be resolved before we log them.
-    logAsyncResultsImmediately : false,
+    logAsyncResultsImmediately: false,
 
     // Our custom logger.  Using an arrow function makes it possible to spy on
     // emeLogger in our tests without breaking this connection.
-    logger : (log) => emeLogger(log),
+    logger: (log) => emeLogger(log),
 
     // Don't bother logging event listener methods.  It's not useful.
     // We can still log events, though.
-    skipProperties : [
+    skipProperties: [
       'addEventListener',
       'removeEventListener',
     ],
@@ -404,7 +405,7 @@ const EmeLogHelper = {
         // The result from decodingInfo is a plain object.  We need to dive into
         // this field in particular to find MediaKeySystemAccess instances to
         // trace.
-        exploreResultFields : [ 'keySystemAccess' ],
+        exploreResultFields: ['keySystemAccess'],
       }));
 
   // These constructors are not used directly, but this registers them to the
@@ -413,9 +414,9 @@ const EmeLogHelper = {
   TraceAnything.traceClass(MediaKeySystemAccess, options);
   TraceAnything.traceClass(
       MediaKeySession, combineOptions(options, {
-        idProperty : 'sessionId',
+        idProperty: 'sessionId',
 
-        skipProperties : options.skipProperties.concat([
+        skipProperties: options.skipProperties.concat([
           // Also skip logging certain noisy properties on MediaKeySession.
           // They are logged with keystatuschange event.
           'expiration',
@@ -426,8 +427,8 @@ const EmeLogHelper = {
           'sessionId',
         ]),
 
-        eventProperties : {
-          'keystatuseschange' : [ 'expiration', 'keyStatuses' ],
+        eventProperties: {
+          'keystatuseschange': ['expiration', 'keyStatuses'],
         },
       }));
 
@@ -443,10 +444,10 @@ const EmeLogHelper = {
   const elementOptions = combineOptions(options, {
     // Skip all property access on media elements.
     // It's a little noisy and unhelpful (currentTime getter, for example).
-    properties : false,
+    properties: false,
 
     // And these specific events are VERY noisy.  Skip them.
-    skipEvents : [
+    skipEvents: [
       'durationchange',
       'loadedmetadata',
       'mousedown',
@@ -473,7 +474,7 @@ const EmeLogHelper = {
     ],
 
     // Methods we don't care about on media elements:
-    skipProperties : options.skipProperties.concat([
+    skipProperties: options.skipProperties.concat([
       'getAttribute',
       'getBoundingClientRect',
       'querySelector',
@@ -482,19 +483,19 @@ const EmeLogHelper = {
       'onclick',
     ]),
 
-    eventProperties : {
-      'ratechange' : 'playbackRate',
-      'resize' : 'getBoundingClientRect',
-      'play' : playbackStateProperties,
-      'playing' : playbackStateProperties,
-      'pause' : playbackStateProperties,
-      'ended' : playbackStateProperties,
-      'durationchange' : playbackStateProperties,
-      'waiting' : playbackStateProperties,
-      'loadedmetadata' : playbackStateProperties,
-      'loadeddata' : playbackStateProperties,
-      'canplay' : playbackStateProperties,
-      'canplaythrough' : playbackStateProperties,
+    eventProperties: {
+      'ratechange': 'playbackRate',
+      'resize': 'getBoundingClientRect',
+      'play': playbackStateProperties,
+      'playing': playbackStateProperties,
+      'pause': playbackStateProperties,
+      'ended': playbackStateProperties,
+      'durationchange': playbackStateProperties,
+      'waiting': playbackStateProperties,
+      'loadedmetadata': playbackStateProperties,
+      'loadeddata': playbackStateProperties,
+      'canplay': playbackStateProperties,
+      'canplaythrough': playbackStateProperties,
     },
   });
   TraceAnything.traceElement('video', elementOptions);

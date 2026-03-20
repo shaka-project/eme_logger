@@ -53,11 +53,27 @@ describe('EME tracing', () => {
     0xf5, 0xdc, 0x40, 0xdd, 0xc9, 0x32, 0x00,
   ]);
   // A completely valid mp4 in a data URI (an audio init segment).
-  const tinyMp4 = 'data:audio/mp4;base64,AAAAGGZ0eXBkYXNoAAAAAGlzbzZtcDQxAAAC0W1vb3YAAABsbXZoZAAAAADTjyWa048lmgAAu4ACim4AAAEAAAEAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAACGbWV0YQAAAAAAAAAgaGRscgAAAAAAAAAASUQzMgAAAAAAAAAAAAAAAAAAAFpJRDMyAAAAABXHSUQzBAAAAAAAQlBSSVYAAAA4AABodHRwczovL2dpdGh1Yi5jb20vZ29vZ2xlL2VkYXNoLXBhY2thZ2VyAGZlNjc3NWEtcmVsZWFzZQAAADhtdmV4AAAAEG1laGQAAAAAAopuAAAAACB0cmV4AAAAAAAAAAEAAAABAAAEAAAAAAAAAAAAAAABn3RyYWsAAABcdGtoZAAAAAPTjyWa048lmgAAAAEAAAAAAopuAAAAAAAAAAAAAAAAAAEAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAATttZGlhAAAAIG1kaGQAAAAA048lmtOPJZoAALuAAopuABXHAAAAAAAtaGRscgAAAAAAAAAAc291bgAAAAAAAAAAAAAAAFNvdW5kSGFuZGxlcgAAAADmbWluZgAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAKpzdGJsAAAAXnN0c2QAAAAAAAAAAQAAAE5tcDRhAAAAAAAAAAEAAAAAAAAAAAACABAAAAAAu4AAAAAAACplc2RzAAAAAAMcAAEABBRAFQAAAAAAAAAAAAAABQURkFblAAYBAgAAABBzdHRzAAAAAAAAAAAAAAAQc3RzYwAAAAAAAAAAAAAAFHN0c3oAAAAAAAAAAAAAAAAAAAAQc3RjbwAAAAAAAAAAAAAAEHNtaGQAAAAAAAAAAA==';
+  const tinyMp4 = 'data:audio/mp4;base64,' +
+      'AAAAGGZ0eXBkYXNoAAAAAGlzbzZtcDQxAAAC0W1vb3YAAABsbXZoZAAAAADTjyWa' +
+      '048lmgAAu4ACim4AAAEAAAEAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAA' +
+      'AAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAACG' +
+      'bWV0YQAAAAAAAAAgaGRscgAAAAAAAAAASUQzMgAAAAAAAAAAAAAAAAAAAFpJRDMy' +
+      'AAAAABXHSUQzBAAAAAAAQlBSSVYAAAA4AABodHRwczovL2dpdGh1Yi5jb20vZ29v' +
+      'Z2xlL2VkYXNoLXBhY2thZ2VyAGZlNjc3NWEtcmVsZWFzZQAAADhtdmV4AAAAEG1l' +
+      'aGQAAAAAAopuAAAAACB0cmV4AAAAAAAAAAEAAAABAAAEAAAAAAAAAAAAAAABn3Ry' +
+      'YWsAAABcdGtoZAAAAAPTjyWa048lmgAAAAEAAAAAAopuAAAAAAAAAAAAAAAAAAEA' +
+      'AAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAA' +
+      'ATttZGlhAAAAIG1kaGQAAAAA048lmtOPJZoAALuAAopuABXHAAAAAAAtaGRscgAA' +
+      'AAAAAAAAc291bgAAAAAAAAAAAAAAAFNvdW5kSGFuZGxlcgAAAADmbWluZgAAACRk' +
+      'aW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAKpzdGJsAAAAXnN0c2QA' +
+      'AAAAAAAAAQAAAE5tcDRhAAAAAAAAAAEAAAAAAAAAAAACABAAAAAAu4AAAAAAACpl' +
+      'c2RzAAAAAAMcAAEABBRAFQAAAAAAAAAAAAAABQURkFblAAYBAgAAABBzdHRzAAAA' +
+      'AAAAAAAAAAAQc3RzYwAAAAAAAAAAAAAAFHN0c3oAAAAAAAAAAAAAAAAAAAAQc3Rj' +
+      'bwAAAAAAAAAAAAAAEHNtaGQAAAAAAAAAAA==';
 
   describe('timestamps and durations', () => {
     it('are logged', async () => {
-      const mksa = await navigator.requestMediaKeySystemAccess(
+      await navigator.requestMediaKeySystemAccess(
           keySystem, minimalConfigs);
 
       expect(emeLogger).toHaveBeenCalledWith(
@@ -188,7 +204,7 @@ describe('EME tracing', () => {
     it('load calls', async () => {
       try {
         await session.load('fakeSessionId');
-      } catch (exception) {}  // Will fail with a fake session ID; ignore it
+      } catch {} // Will fail with a fake session ID; ignore it
 
       expect(emeLogger).toHaveBeenCalledWith(
           jasmine.objectContaining({
@@ -204,7 +220,7 @@ describe('EME tracing', () => {
       const fakeLicenseResponse = new Uint8Array([1, 2, 3]);
       try {
         await session.update(fakeLicenseResponse);
-      } catch (exception) {} // Will fail with fake data; ignore it
+      } catch {} // Will fail with fake data; ignore it
 
       expect(emeLogger).toHaveBeenCalledWith(
           jasmine.objectContaining({
@@ -219,7 +235,7 @@ describe('EME tracing', () => {
     it('close calls', async () => {
       try {
         await session.close();
-      } catch (exception) {}  // Will fail due to invalid state; ignore it
+      } catch {} // Will fail due to invalid state; ignore it
 
       expect(emeLogger).toHaveBeenCalledWith(
           jasmine.objectContaining({
@@ -234,7 +250,7 @@ describe('EME tracing', () => {
     it('remove calls', async () => {
       try {
         await session.remove();
-      } catch (exception) {}  // Will fail due to invalid state; ignore it
+      } catch {} // Will fail due to invalid state; ignore it
 
       expect(emeLogger).toHaveBeenCalledWith(
           jasmine.objectContaining({
@@ -278,25 +294,25 @@ describe('EME tracing', () => {
       // validate the results of that at the level of postMessage instead.
       // Both message and messageType fields should be present.
       const expectedMessage = jasmine.objectContaining({
-          log: jasmine.objectContaining({
-	          type: TraceAnything.LogTypes.Event,
-            event: {
-              __type__: 'message Event',
-              __fields__: jasmine.objectContaining({
-                message: jasmine.objectContaining({
-                  __type__: 'Uint8Array',
-                }),
-                messageType: 'license-request',
+        log: jasmine.objectContaining({
+          type: TraceAnything.LogTypes.Event,
+          event: {
+            __type__: 'message Event',
+            __fields__: jasmine.objectContaining({
+              message: jasmine.objectContaining({
+                __type__: 'Uint8Array',
               }),
-            },
-          }),
-        });
+              messageType: 'license-request',
+            }),
+          },
+        }),
+      });
       expect(postMessage).toHaveBeenCalledWith(expectedMessage, '*');
     });
   });
 
   describe('logs HTML media elements', () => {
-    var mediaElement;
+    let mediaElement;
 
     beforeAll(async () => {
       // Make a real video element to log access to.
@@ -350,7 +366,7 @@ describe('EME tracing', () => {
 
     it('events', async () => {
       mediaElement.pause();
-      await mediaElement.play();  // Will dispatch the play event
+      await mediaElement.play(); // Will dispatch the play event
 
       // Simulate a real error event, which also sets this property:
       Object.defineProperty(mediaElement, 'error', {value: {code: 5}});

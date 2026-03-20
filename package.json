@@ -1,6 +1,9 @@
 {
   "devDependencies": {
     "chromedriver": "^139.0.2",
+    "eslint": "^10.1.0",
+    "eslint-config-google": "^0.14.0",
+    "globals": "^17.4.0",
     "gulp": "^5.0.0",
     "gulp-rename": "^2.0.0",
     "gulp-zip": "^5.1.0",
@@ -12,7 +15,9 @@
   },
   "scripts": {
     "build": "npm ci && gulp",
-    "test": "jasmine-browser-runner runSpecs"
+    "test": "jasmine-browser-runner runSpecs",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "version": "3.4.3"
 }
