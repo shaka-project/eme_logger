@@ -16,6 +16,7 @@
   "scripts": {
     "build": "npm ci && gulp",
     "test": "npx webdriver-installer drivers && PATH=$PATH:drivers jasmine-browser-runner runSpecs",
+    "serve": "npx webdriver-installer drivers && PATH=$PATH:drivers jasmine-browser-runner serve",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
