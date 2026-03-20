@@ -46,13 +46,13 @@ class EmeLoggerWindow {
 
     // Default to hex first as that is what is selected.
     sessionStorage.setItem('toggle', 'hex');
-    let contact = document.querySelectorAll('input[name="radio-toggle-group"]');
+    const contacts =
+        document.querySelectorAll('input[name="radio-toggle-group"]');
 
     /** @private {!HTMLInputElement} */
-    for (let i = 0; i < contact.length; i++) {
-      contact[i].addEventListener('change', function() {
-        let val = this.value;
-        sessionStorage.setItem('toggle', this.value);
+    for (const contact of contacts) {
+      contact.addEventListener('change', (event) => {
+        sessionStorage.setItem('toggle', event.target.value);
       });
     }
   }
@@ -114,7 +114,7 @@ class EmeLoggerWindow {
     }
 
     if (log.type == 'Constructor' || log.type == 'Method') {
-      const args = log.args.map(arg => this.prettyPrint_(arg)).join(', ');
+      const args = log.args.map((arg) => this.prettyPrint_(arg)).join(', ');
       data.textContent = `${title.textContent}(${args})`;
 
       if (log.threw) {
@@ -204,7 +204,7 @@ class EmeLoggerWindow {
       // This has a data array like an ArrayBufferView.
       // TODO: Handle formatting for 16-bit and 32-bit values?
       if (obj.__data__) {
-        const data = obj.__data__.slice();  // Make a copy
+        const data = obj.__data__.slice(); // Make a copy
         if (data.length == 0) {
           format += '[]';
         } else {
@@ -219,11 +219,11 @@ class EmeLoggerWindow {
             }
           } else {
             const base64data =
-                this.bytesToBase64(data).split(/(.{97})/).filter(O => O);
-            base64data.forEach(base64chunk => {
+                this.bytesToBase64(data).split(/(.{97})/).filter((O) => O);
+            base64data.forEach((base64chunk) => {
               format += base64chunk;
               format += '\n';
-            })
+            });
           }
           format += indentation + ']';
         }

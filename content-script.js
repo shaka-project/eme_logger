@@ -18,7 +18,7 @@
 
 (() => {
   // Load required scripts into the current web page.
-  const urls = [ '/trace-anything.js', '/eme-trace-config.js' ];
+  const urls = ['/trace-anything.js', '/eme-trace-config.js'];
   for (const url of urls) {
     const absoluteUrl = chrome.runtime.getURL(url);
 
@@ -37,8 +37,8 @@
   window.addEventListener('message', (event) => {
     if (event.data.type == 'emeTraceLog') {
       chrome.runtime.sendMessage({
-        type : 'EME_LOGGER_TRACE',
-        log : event.data.log,
+        type: 'EME_LOGGER_TRACE',
+        log: event.data.log,
       });
     }
   });

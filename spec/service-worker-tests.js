@@ -30,17 +30,17 @@ describe('Service worker', () => {
       },
       runtime: {
         getURL: () => { },
-      }
-    }
+      },
+    };
     mockWindow = {
       id: 1234567,
     };
 
     // Return the mock window when we are supposed to create one.
     spyOn(window.chrome.windows, 'create').and.returnValue(
-      new Promise((resolve, reject) => {
-        resolve(mockWindow)
-      }));
+        new Promise((resolve, reject) => {
+          resolve(mockWindow);
+        }));
 
     spyOn(window.chrome.runtime, 'getURL').and.returnValue('log-window.html');
   });
@@ -57,18 +57,18 @@ describe('Service worker', () => {
   describe('Window handling', () => {
     it('opens the logging window', () => {
       EmeLoggerServiceWorker.instance.openLogWindow();
-      expect(window.chrome.windows.create).toHaveBeenCalledWith(new Object({
-        url: 'log-window.html', type: 'popup', height: 600, width: 700
-      }));
+      expect(window.chrome.windows.create).toHaveBeenCalledWith({
+        url: 'log-window.html', type: 'popup', height: 600, width: 700,
+      });
     });
 
-    it('reports the logging window is open', async function () {
+    it('reports the logging window is open', async function() {
       expect(EmeLoggerServiceWorker.instance.isLogWindowOpen()).toBe(false);
       await EmeLoggerServiceWorker.instance.openLogWindow();
       expect(EmeLoggerServiceWorker.instance.isLogWindowOpen()).toBe(true);
     });
 
-    it('reports the logging window is closed', async function () {
+    it('reports the logging window is closed', async function() {
       await EmeLoggerServiceWorker.instance.openLogWindow();
       expect(EmeLoggerServiceWorker.instance.isLogWindowOpen()).toBe(true);
       EmeLoggerServiceWorker.instance.closeLogWindow(mockWindow.id);

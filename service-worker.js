@@ -35,7 +35,7 @@ class EmeLoggerServiceWorker {
     }
 
     // Bring the window to the foreground.
-    chrome.windows.update(this.logWindow_.id, { focused: true });
+    chrome.windows.update(this.logWindow_.id, {focused: true});
   }
 
   /**
