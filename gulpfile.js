@@ -33,12 +33,17 @@ function packageExtension() {
     'manifest.json',
     '*.html',
     '*.js',
+    'node_modules/trace-anything/trace-anything.js',
     '!gulpfile.js',
   ], {base: './', encoding: false});
 
   return sources
       .pipe(rename((path) => {
-        path.dirname = `eme_logger/${path.dirname}`;
+        if (path.dirname == 'node_modules/trace-anything') {
+          path.dirname = 'eme_logger';
+        } else {
+          path.dirname = `eme_logger/${path.dirname}`;
+        }
       }))
       .pipe(zip(`eme_logger-${version}.zip`))
       .pipe(gulp.dest('.'));
